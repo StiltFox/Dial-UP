@@ -1,0 +1,17 @@
+[
+{
+  "directory": "/home/coders/C++/StiltFox-Rest-Framework/build",
+  "command": "/usr/bin/c++  -I/home/coders/C++/StiltFox-Rest-Framework/modules/controllermanager -I/home/coders/C++/StiltFox-Rest-Framework/modules/configurationloader -g -std=gnu++20 -o CMakeFiles/StiltFox-RestApi-Framework.dir/StiltFox-RestApi-Framework.cpp.o -c /home/coders/C++/StiltFox-Rest-Framework/StiltFox-RestApi-Framework.cpp",
+  "file": "/home/coders/C++/StiltFox-Rest-Framework/StiltFox-RestApi-Framework.cpp"
+},
+{
+  "directory": "/home/coders/C++/StiltFox-Rest-Framework/build/modules/configurationloader",
+  "command": "/usr/bin/c++  -I/home/coders/C++/StiltFox-Rest-Framework/modules/controllermanager -I/home/coders/C++/StiltFox-Rest-Framework/modules/configurationloader -g -std=gnu++20 -o CMakeFiles/ConfigurationLoader.dir/ConfigurationLoader.cpp.o -c /home/coders/C++/StiltFox-Rest-Framework/modules/configurationloader/ConfigurationLoader.cpp",
+  "file": "/home/coders/C++/StiltFox-Rest-Framework/modules/configurationloader/ConfigurationLoader.cpp"
+},
+{
+  "directory": "/home/coders/C++/StiltFox-Rest-Framework/build/modules/controllermanager",
+  "command": "/usr/bin/c++  -I/home/coders/C++/StiltFox-Rest-Framework/modules/controllermanager -I/home/coders/C++/StiltFox-Rest-Framework/modules/configurationloader -g -std=gnu++20 -o CMakeFiles/ControllerManager.dir/ControllerManager.cpp.o -c /home/coders/C++/StiltFox-Rest-Framework/modules/controllermanager/ControllerManager.cpp",
+  "file": "/home/coders/C++/StiltFox-Rest-Framework/modules/controllermanager/ControllerManager.cpp"
+}
+]
