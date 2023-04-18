@@ -1,19 +1,22 @@
-#ifndef StiltFox_RestAPI_Framework_ControllerManager
-#define StiltFox_RestAPI_Framework_ControllerManager
+#ifndef StiltFox_Web_Framework_ControllerManager
+#define StiltFox_Web_Framework_ControllerManager
 #include <Stilt_Fox/UniversalLibrary/HttpMessage.hpp>
 
 namespace StiltFox
 {
-    namespace RestApi_Framework
+    namespace Web
     {
-        class ControllerManager
+        namespace Framework
         {
-            std::unordered_map<std::string, std::unordered_map<UniversalLibrary::HttpMessage::Method, std::function<UniversalLibrary::HttpMessage(UniversalLibrary::HttpMessage)>>> registry;
+            class ControllerManager
+            {
+                std::unordered_map<std::string, std::unordered_map<UniversalLibrary::HttpMessage::Method, std::function<UniversalLibrary::HttpMessage(UniversalLibrary::HttpMessage)>>> registry;
 
-            public:
-            UniversalLibrary::HttpMessage dispatchMessage(UniversalLibrary::HttpMessage message);
-            void registerController(std::string path, UniversalLibrary::HttpMessage::Method method, std::function<UniversalLibrary::HttpMessage(UniversalLibrary::HttpMessage)>);
-        };
+                public:
+                UniversalLibrary::HttpMessage dispatchMessage(UniversalLibrary::HttpMessage message);
+                void registerController(std::string path, UniversalLibrary::HttpMessage::Method method, std::function<UniversalLibrary::HttpMessage(UniversalLibrary::HttpMessage)>);
+            };
+        }
     }
 }
 

@@ -1,20 +1,23 @@
-#ifndef StiltFox_RestAPI_Framework_ConfigurationLoader
-#define StiltFox_RestAPI_Framework_ConfigurationLoader
+#ifndef StiltFox_Web_Framework_ConfigurationLoader
+#define StiltFox_Web_Framework_ConfigurationLoader
 #include <string>
-#include <Stilt_Fox/UniversalLibrary/File.hpp>
+#include <Stilt_Fox/UniversalLibrary/filelogger.hpp>
 
 namespace StiltFox
 {
-    namespace RestApi_Framework
+    namespace Web
     {
-        class ConfigurationLoader
+        namespace Framework
         {
-            int listeningPort;
-            UniversalLibrary::File logFile;
+            struct ConfigurationLoader
+            {
+                int port;
+                UniversalLibrary::Logger* logger;
 
-            public:
-            ConfigurationLoader(std::string fileLocation);
-        };
+                ConfigurationLoader(std::string fileLocation);
+                ~ConfigurationLoader();
+            };
+        }
     }
 }
 
