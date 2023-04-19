@@ -6,36 +6,32 @@ using namespace nlohmann;
 using namespace StiltFox::Web::Framework;
 using namespace StiltFox::UniversalLibrary;
 
-streambuf* defaultBuff;
+unordered_map<string,Logger::Level> levelMap = {{"DEBUG", Logger::DEBUG},{"INFO", Logger::INFO},{"WARN", Logger::WARN}, {"ERROR", Logger::ERROR}};
 
 ConfigurationLoader::ConfigurationLoader(string path)
 {
     logger = nullptr;
-    // logStream = nullptr;
-    // defaultBuff = cout.rdbuf();
-    // File configFile(path);
+    File configFile(path);
 
-    // if (configFile.exists())
-    // {
-    //     json configJson = json::parse(configFile.read(), nullptr, false);
-    //     port = configJson.contains("port") && configJson["port"].is_number() ? configJson["port"].get<int>() : 8080;
-
-    //     if (configJson.contains("logFile") && configJson["logFile"].is_string())
-    //     {
-    //         File log = configJson["logFile"].get<string>();
-    //         if (log.canWrite()) 
-    //         {
-    //             log.touch();
-    //             logStream = new ofstream(log.getPath());
-    //             cout.rdbuf(logStream->rdbuf());
-    //         }
-    //     }
-    // }
-    // else
-    // {
-    //     cout << endl << "could not read config file at: " << path << endl;
-    //     port = 8080;
-    // }
+    if (configFile.exists())
+    {
+        json configJson = json::parse(configFile.read(), nullptr, false);
+        port = configJson.contains("port") && configJson["port"].is_number() ? configJson["port"].get<int>() : 8080;
+        if (configJson.contains("logFile") && configJson["logFile"].is_string())
+        {
+            logger = new FileLogger(configJson["logFile"].get<string>(), true, Logger::INFO);
+        }
+        else
+        {
+            logger = new Logger(Logger::DEBUG);
+        }   
+    }
+    else
+    {
+        if (logger == nullptr) logger = new Logger(Logger::DEBUG);
+        logger->error("could not read config file at: " + path + "\n");
+        port = 8080;
+    }
 }
 
 ConfigurationLoader::~ConfigurationLoader()
