@@ -1,7 +1,7 @@
 #ifndef StiltFox_Web_Framework_ConfigurationLoader
 #define StiltFox_Web_Framework_ConfigurationLoader
 #include <string>
-#include <Stilt_Fox/UniversalLibrary/filelogger.hpp>
+#include <Stilt_Fox/UniversalLibrary/FileLogger.hpp>
 
 namespace StiltFox
 {

@@ -1,2 +1,2 @@
 add_library(ConfigurationLoader ConfigurationLoader.cpp)
-target_link_libraries(ConfigurationLoader UniversalLibrary::File)
+target_link_libraries(ConfigurationLoader UniversalLibrary::Logger UniversalLibrary::FileLogger UniversalLibrary::File)
