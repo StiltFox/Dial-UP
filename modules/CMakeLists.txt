@@ -1,3 +1,3 @@
-add_subdirectory(configurationloader)
-add_subdirectory(controllermanager)
+add_subdirectory(http-message)
 add_subdirectory(socket)
+add_subdirectory(operator)

@@ -1,0 +1,3 @@
+add_subdirectory(configurationloader)
+add_subdirectory(controllermanager)
+add_subdirectory(socket)
