@@ -101,6 +101,16 @@ HttpMessage::HttpMessage(int socketId, const function<int(int,char*,int)>& reade
     parseString(request);
 }
 
+HttpMessage::HttpMessage(const HttpMessage& messageToCopy)
+{
+    statusCode = messageToCopy.statusCode;
+    httpMethod = messageToCopy.httpMethod;
+    requestUri = messageToCopy.requestUri;
+    statusReason = messageToCopy.statusReason;
+    headers = messageToCopy.headers;
+    body = messageToCopy.body;
+}
+
 void HttpMessage::parseString(queue<char>& request)
 {
     statusCode = 0;

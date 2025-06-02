@@ -20,6 +20,7 @@ namespace StiltFox::DialUp
         HttpMessage(int statusCode, std::unordered_map<std::string,std::string> headers = {}, std::string body = "", const std::string& statusReason = "");
         HttpMessage(Method method, std::string uri = "*", std::unordered_map<std::string,std::string> headers = {}, std::string body = "");
         HttpMessage(int socketId, const std::function<int(int,char*,int)>& reader);
+        HttpMessage(const HttpMessage&);
         std::string getHttpMethodAsString() const;
         std::string printAsResponse() const;
         std::string printAsRequest() const;

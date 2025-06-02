@@ -1,5 +1,3 @@
-//Here we start by doing something special. MacOs needs this header file to run
-//however linux does not.
 #ifdef MAC
     #include <sys/types.h>
 #endif
@@ -7,6 +5,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include "Socket.h++"
+
+using namespace StiltFox::DialUp;
 
 Connection::Connection(int handle)
 {
@@ -20,15 +20,9 @@ int Connection::getHandle()
 
 HttpMessage Connection::receiveData()
 {
-    /*
-    * We pass in the handle to our socket and the read function from sys/socket.h
-    * with this information the HttpMessage will construct itself and return to the
-    * caller.
-    */
     return HttpMessage(handle, &read);
 }
 
-//Here is where we can respond to the client.
 void Connection::sendData(HttpMessage data)
 {
     std::string toSend = data.printAsResponse();
@@ -78,13 +72,13 @@ bool Socket::listenPort()
     return output;
 }
 
-Connection* Socket::openConnection()
+Connection* Socket::openConnection() const
 {
     int addrlen = sizeof(address);
     return new Connection(accept(socketHandle,(struct sockaddr*)&address,(socklen_t*)&addrlen));
 }
 
-void Socket::sendData(HttpMessage data)
+void Socket::sendData(HttpMessage data) const
 {
     int addrlen = sizeof(address);
     if (connect(socketHandle, (struct sockaddr*)&address, (socklen_t)addrlen) >= 0)
@@ -103,7 +97,7 @@ void Socket::closePort()
     }
 }
 
-int Socket::getHandle()
+int Socket::getHandle() const
 {
     return socketHandle;
 }
