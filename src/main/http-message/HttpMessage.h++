@@ -1,9 +1,10 @@
-#ifndef STILTFOX_DIAL_UP_HTTPMESSAGE_H
-#define STILTFOX_DIAL_UP_HTTPMESSAGE_H
-#include <string>
-#include <unordered_map>
+#ifndef Stilt_Fox_3482cf09b5224d89bc0997f795fff9e1
+#define Stilt_Fox_3482cf09b5224d89bc0997f795fff9e1
 #include <queue>
+#include <string>
+#include <vector>
 #include <functional>
+#include <unordered_map>
 
 namespace StiltFox::DialUp
 {
@@ -12,13 +13,13 @@ namespace StiltFox::DialUp
         enum Method {GET,HEAD,POST,PUT,PATCH,DELETE,CONNECT,OPTIONS,TRACE,ERROR,NONE};
         int statusCode = 0;
         Method httpMethod = NONE;
-        std::string requestUri;
-        std::string statusReason;
-        std::unordered_map<std::string,std::string> headers;
-        std::string body;
+        std::string httpVersion, requestUri, statusReason, body;
+        std::unordered_map<std::string,std::vector<std::string>> headers;
 
-        HttpMessage(int statusCode, std::unordered_map<std::string,std::string> headers = {}, std::string body = "", const std::string& statusReason = "");
-        HttpMessage(Method method, std::string uri = "*", std::unordered_map<std::string,std::string> headers = {}, std::string body = "");
+        HttpMessage(int statusCode, std::unordered_map<std::string,std::vector<std::string>> headers = {},
+            std::string body = "", const std::string& statusReason = "");
+        HttpMessage(Method method, std::string uri = "*",
+            std::unordered_map<std::string,std::vector<std::string>> headers = {}, std::string body = "");
         HttpMessage(int socketId, const std::function<int(int,char*,int)>& reader);
         HttpMessage(const HttpMessage&);
         std::string getHttpMethodAsString() const;
