@@ -1,4 +1,10 @@
-#include <cstring>
+/*******************************************************
+* Created by Cryos on 6/5/25.
+* Copyright 2025 Stilt Fox® LLC
+*
+* See LICENSE on root project directory for terms
+* of use.
+********************************************************/
 #include "HttpMessage.h++"
 
 using namespace std;
@@ -52,130 +58,121 @@ namespace StiltFox::DialUp
         return stringMethods.contains(method) ? stringMethods[method] : HttpMessage::Method::ERROR;
     }
 
-    inline string parseToDelim(queue<char>& toParse, char delim, char backupDelim)
+    HttpMessage::HttpMessage(int status, unordered_map<string,vector<string>> head, string bod, const string& reason)
+    {
+        statusCode = status;
+        httpMethod = NONE;
+        httpVersion = "HTTP/1.1";
+        statusReason = reason.empty() ? getReasonCode(statusCode) : reason;
+        headers = move(head);
+        body = move(bod);
+    }
+
+    HttpMessage::HttpMessage(Method method, string uri, unordered_map<string,vector<string>> head, string bod)
+    {
+        statusCode = 0;
+        httpMethod = method;
+        httpVersion = "HTTP/1.1";
+        requestUri = move(uri);
+        headers = move(head);
+        body = move(bod);
+    }
+
+    HttpMessage::HttpMessage(const HttpMessage& messageToCopy)
+    {
+        statusCode = messageToCopy.statusCode;
+        httpMethod = messageToCopy.httpMethod;
+        requestUri = messageToCopy.requestUri;
+        statusReason = messageToCopy.statusReason;
+        httpVersion = messageToCopy.httpVersion;
+        headers = messageToCopy.headers;
+        body = messageToCopy.body;
+    }
+
+    string HttpMessage::printBodyAndHeaders() const
     {
         string output;
 
-        while (!toParse.empty() && toParse.front() != delim && toParse.front() != backupDelim)
+        for (const auto & [key, value] : headers)
         {
-            output += toParse.front();
-            toParse.pop();
+            output += key;
+            output += ": ";
+
+            for (const auto& trait: value)
+            {
+                string excapedTrait = trait.find(',') != string::npos ? "\"" + trait + "\"" : trait;
+            }
+
+            output += "\r\n";
         }
-        if (!toParse.empty()) toParse.pop();
 
-        return output;
+        return output + "\r\n" + body;
     }
 
-    inline string parseToDelim(queue<char>& toParse, char delim)
+    string HttpMessage::printAsResponse() const
     {
-        return parseToDelim(toParse, delim, '\000');
+        return httpVersion + " " + to_string(statusCode) + " " + statusReason+"\r\n" + printBodyAndHeaders();
+    }
+
+    string HttpMessage::printAsRequest() const
+    {
+        return getStringMethod(httpMethod) + " " + requestUri +" " + httpVersion + "\r\n" + printBodyAndHeaders();
+    }
+
+    string HttpMessage::getHttpMethodAsString() const
+    {
+        return getStringMethod(httpMethod);
+    }
+
+    bool HttpMessage::operator==(const HttpMessage& other) const
+    {
+        return statusCode == other.statusCode && httpMethod == other.httpMethod && requestUri == other.requestUri
+               && statusReason == other.statusReason && headers == other.headers && body == other.body
+               && httpVersion == other.httpVersion;
+    }
+
+    bool HttpMessage::operator!=(const HttpMessage& other) const
+    {
+        return !(statusCode == other.statusCode && httpMethod == other.httpMethod && requestUri == other.requestUri
+                 && statusReason == other.statusReason && headers == other.headers && body == other.body
+                 && httpVersion == other.httpVersion);
     }
 }
 
-HttpMessage::HttpMessage(int status, unordered_map<string,string> head, string bod, const string& reason)
-{
-    statusCode = status;
-    httpMethod = Method::NONE;
-    statusReason = reason.empty() ? getReasonCode(statusCode) : reason;
-    headers = std::move(head);
-    body = std::move(bod);
-}
+// void HttpMessage::parseString(queue<char>& request)
+// {
+//     statusCode = 0;
+//     httpMethod = getMethodFromString(parseToDelim(request, ' '));
+//     requestUri = parseToDelim(request, ' ', '\n');
+//     requestUri.starts_with("HTTP") ? requestUri = "" : parseToDelim(request, '\n');
+//
+//     while (!request.empty() && request.front() != '\r' && request.front() != '\n')
+//     {
+//         string key = parseToDelim(request, ':');
+//         if (request.front() == ' ') request.pop();
+//         headers[key] = parseToDelim(request, '\r');
+//         if (request.front() == '\n') request.pop();
+//     }
+//     if (request.front() == '\r') parseToDelim(request, '\n');
+//
+//     body = parseToDelim(request, '\000');
+// }
 
-HttpMessage::HttpMessage(Method method, string uri, unordered_map<string,string> head, string bod)
-{
-    statusCode = 0;
-    httpMethod = method;
-    requestUri = std::move(uri);
-    headers = std::move(head);
-    body = std::move(bod);
-}
-
-HttpMessage::HttpMessage(int socketId, const function<int(int,char*,int)>& reader)
-{
-    char buffer[1024];
-    queue<char> request;
-
-    do
-    {
-        memset(buffer, 0, sizeof(buffer));
-        reader(socketId, buffer, 1024);
-        for (int x=0; x<1023; x++)
-        {
-            if (buffer[x] == '\000') break;
-            request.push(buffer[x]);
-        }
-    } while (buffer[1023] != 0);
-
-    parseString(request);
-}
-
-HttpMessage::HttpMessage(const HttpMessage& messageToCopy)
-{
-    statusCode = messageToCopy.statusCode;
-    httpMethod = messageToCopy.httpMethod;
-    requestUri = messageToCopy.requestUri;
-    statusReason = messageToCopy.statusReason;
-    headers = messageToCopy.headers;
-    body = messageToCopy.body;
-}
-
-void HttpMessage::parseString(queue<char>& request)
-{
-    statusCode = 0;
-    httpMethod = getMethodFromString(parseToDelim(request, ' '));
-    requestUri = parseToDelim(request, ' ', '\n');
-    requestUri.starts_with("HTTP") ? requestUri = "" : parseToDelim(request, '\n');
-
-    while (!request.empty() && request.front() != '\r' && request.front() != '\n')
-    {
-        string key = parseToDelim(request, ':');
-        if (request.front() == ' ') request.pop();
-        headers[key] = parseToDelim(request, '\r');
-        if (request.front() == '\n') request.pop();
-    }
-    if (request.front() == '\r') parseToDelim(request, '\n');
-
-    body = parseToDelim(request, '\000');
-}
-
-string HttpMessage::printBodyAndHeaders() const
-{
-    string output;
-
-    for (const auto & [key, value] : headers)
-    {
-        output += key;
-        output += ": ";
-        output += value;
-        output += "\r\n";
-    }
-
-    return output + "\r\n" + body;
-}
-
-string HttpMessage::printAsResponse() const
-{
-    return "HTTP/1.1 " + to_string(statusCode) + " " + statusReason+"\r\n" + printBodyAndHeaders();
-}
-
-string HttpMessage::printAsRequest() const
-{
-    return getStringMethod(httpMethod) + " " + requestUri +" HTTP/1.1\r\n" + printBodyAndHeaders();
-}
-
-string HttpMessage::getHttpMethodAsString() const
-{
-    return getStringMethod(httpMethod);
-}
-
-bool HttpMessage::operator==(const HttpMessage& other) const
-{
-    return statusCode == other.statusCode && httpMethod == other.httpMethod && requestUri == other.requestUri
-           && statusReason == other.statusReason && headers == other.headers && body == other.body;
-}
-
-bool HttpMessage::operator!=(const HttpMessage& other) const
-{
-    return !(statusCode == other.statusCode && httpMethod == other.httpMethod && requestUri == other.requestUri
-             && statusReason == other.statusReason && headers == other.headers && body == other.body);
-}
+// inline string parseToDelim(queue<char>& toParse, char delim, char backupDelim)
+// {
+//     string output;
+//
+//     while (!toParse.empty() && toParse.front() != delim && toParse.front() != backupDelim)
+//     {
+//         output += toParse.front();
+//         toParse.pop();
+//     }
+//     if (!toParse.empty()) toParse.pop();
+//
+//     return output;
+// }
+//
+// inline string parseToDelim(queue<char>& toParse, char delim)
+// {
+//     return parseToDelim(toParse, delim, '\000');
+// }

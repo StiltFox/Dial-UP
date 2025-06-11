@@ -1,13 +1,23 @@
+/*******************************************************
+* Created by cryos on 6/5/25.
+* Copyright 2024 Stilt Fox® LLC
+*
+* See LICENSE on root project directory for terms
+* of use.
+********************************************************/
+
 #ifndef Stilt_Fox_3482cf09b5224d89bc0997f795fff9e1
 #define Stilt_Fox_3482cf09b5224d89bc0997f795fff9e1
-#include <queue>
 #include <string>
 #include <vector>
-#include <functional>
 #include <unordered_map>
 
 namespace StiltFox::DialUp
 {
+    /******************************************************************************************************************
+     * This class is meant to contain a Http Message. This represents both requests and responses in one class because
+     * they're both so similar.
+     *****************************************************************************************************************/
     struct HttpMessage
     {
         enum Method {GET,HEAD,POST,PUT,PATCH,DELETE,CONNECT,OPTIONS,TRACE,ERROR,NONE};
@@ -20,7 +30,6 @@ namespace StiltFox::DialUp
             std::string body = "", const std::string& statusReason = "");
         HttpMessage(Method method, std::string uri = "*",
             std::unordered_map<std::string,std::vector<std::string>> headers = {}, std::string body = "");
-        HttpMessage(int socketId, const std::function<int(int,char*,int)>& reader);
         HttpMessage(const HttpMessage&);
         std::string getHttpMethodAsString() const;
         std::string printAsResponse() const;
@@ -30,7 +39,6 @@ namespace StiltFox::DialUp
 
     protected:
         std::string printBodyAndHeaders() const;
-        void parseString(std::queue<char>&);
     };
 }
 #endif
