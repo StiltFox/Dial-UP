@@ -5,16 +5,22 @@
 * See LICENSE on root project directory for terms
 * of use.
 ********************************************************/
+#ifdef MAC
+    #include <sys/types.h>
+#endif
 #include <cstring>
 #include <queue>
+#include <mutex>
 #include <chrono>
 #include <thread>
 #include "Socket.h++"
 
 using namespace std;
 
-namespace StiltFox::DialUp::Http
+namespace StiltFox::DialUp
 {
+    mutex readLock;
+
     inline bool setOptions(int handle)
     {
     #ifdef MAC
@@ -25,104 +31,138 @@ namespace StiltFox::DialUp::Http
     #endif
     }
 
-    inline queue<char> getRawData(int socketID, long maxBytes)
+    Socket::Socket(const int portNumber)
     {
-        queue<char> output;
-        int bufferSize = 1024 > maxBytes ? maxBytes : 1024;
-        long numPasses = maxBytes / bufferSize;
-        char buffer[bufferSize];
-
-        if (maxBytes % bufferSize > 0) numPasses++;
-
-        for (int x = 0; x < numPasses; x++)
-        {
-            memset(buffer, 0, bufferSize);
-            read(socketID, buffer, bufferSize);
-
-            for (int y = 0; y < bufferSize; y++)
-            {
-                if(buffer[y] == '\000') break;
-                output.push(buffer[y]);
-            }
-
-            if (buffer[bufferSize - 1] == 0) break;
-        }
-
-        return output;
-    }
-
-    void Connection::initializeValues(int portNumber, int queueSize)
-    {
-        socketHandle = -1;
-        connectionHandle = -1;
-        queue = queueSize;
+        handle = -1;
         address.sin_family = AF_INET;
         address.sin_addr.s_addr = INADDR_ANY;
         address.sin_port = htons(portNumber);
     }
 
-    bool Connection::openSocket()
+    bool Socket::openPort(const int queueSize)
     {
         bool output = false;
 
-        if ((socketHandle = socket(AF_INET, SOCK_STREAM, 0)) >= 0)
+        if ((handle = socket(AF_INET, SOCK_STREAM, 0)) >= 0)
         {
-            if (setOptions(socketHandle))
+            if (setOptions(handle))
             {
-                if (bind(socketHandle,reinterpret_cast<sockaddr*>(&address),sizeof(address)) >= 0)
+                if (bind(handle,(struct sockaddr*)&address,sizeof(address)) >= 0)
                 {
-                    if(listen(socketHandle, queue) >= 0) output = true;
+                    if(listen(handle, queueSize) >= 0) output = true;
                 }
             }
         }
 
-        return output;
-    }
-
-    shared_ptr<Connection> Connection::openConnection(int portNumber, int queueSize)
-    {
-        auto output = make_shared<Connection>();
-
-        output->initializeValues(portNumber, queueSize);
-        if (output->openSocket())
-        {
-            int addressLength = sizeof(output->address);
-            output->connectionHandle =
-                accept(output->socketHandle, (sockaddr *)&output->address, (socklen_t *)& addressLength);
-        }
-        else
-        {
-            output = nullptr;
-        }
+        if (!output) closePort();
 
         return output;
     }
 
-    HttpMessage Connection::receiveData(long maxBytes, long maxWaitTime) const
+    bool Socket::isOpen() const
     {
-        HttpMessage output = HttpMessage::ERROR;
-        std::queue<char> rawData;
+        return handle > -1;
+    }
 
-        thread dataThread([connectionHandle, maxBytes, &rawData]()
+    void Socket::closePort()
+    {
+        if (handle > -1)
         {
-            rawData = getRawData(connectionHandle, maxBytes);
+            shutdown(handle,SHUT_RDWR);
+            handle = -1;
+        }
+    }
+
+    Socket::~Socket()
+    {
+        closePort();
+    }
+
+    Socket::Connection::Connection(const int handle, const long maxWaitTimeMS, const long maxDataSizeBytes)
+    {
+        this->handle = handle;
+        this->maxWaitTimeMS = maxWaitTimeMS;
+        this->maxDataSizeBytes = maxDataSizeBytes;
+    }
+
+    shared_ptr<Socket::Connection> Socket::Connection::openConnection(
+            const Socket& socket, long maxWaitTimeMS, long maxDataSizeBytes)
+    {
+        int addressLength = sizeof(socket.address);
+        int connectionHandle = accept(socket.handle, (struct sockaddr*)&socket.address, (socklen_t*)&addressLength);
+
+        return connectionHandle > -1 ?
+            make_shared<Connection>(connectionHandle, maxWaitTimeMS, maxDataSizeBytes) : nullptr;
+    }
+
+    void Socket::Connection::readSocketToBuffer(Response& rawData, bool& holt)
+    {
+        const long bufferSize = maxDataSizeBytes > 1024 ? 1024 : maxDataSizeBytes;
+        long numIterations = bufferSize / maxDataSizeBytes;
+        char buffer[bufferSize];
+
+        if (bufferSize % maxDataSizeBytes > 0) numIterations++;
+
+        do
+        {
+            memset(buffer, 0, bufferSize);
+
+            numIterations--;
+            if (numIterations < 0)
+            {
+                lock_guard guard(readLock);
+                rawData.errorMessage = "Data received exceeds limit";
+                break;
+            }
+
+            read(handle, buffer, bufferSize);
+            for (int y=0; y < bufferSize; y++)
+            {
+                lock_guard guard(readLock);
+                rawData.data.emplace_back(buffer[y]);
+            }
+        } while ((buffer[bufferSize -1] != 0) && !holt);
+
+        lock_guard guard(readLock);
+        holt = true;
+    }
+
+
+    Socket::Connection::Response Socket::Connection::listen()
+    {
+        Response output = {{}, ""};
+        bool holt = false;
+
+        auto startTime = chrono::high_resolution_clock::now();
+        thread socketThread([&output, this, &holt]()
+        {
+            readSocketToBuffer(output, holt);
         });
 
+        while (chrono::high_resolution_clock::now() - startTime < chrono::milliseconds(this->maxWaitTimeMS) && !holt);
+
+        if (!holt)
+        {
+            lock_guard guard(readLock);
+            holt = true;
+            output.errorMessage = "Connection timed out";
+        }
+
         return output;
     }
 
-    Connection::~Connection()
+    void Socket::Connection::sendData(const std::vector<char>& data)
     {
-        if (connectionHandle > -1)
-        {
-            close(connectionHandle);
-            connectionHandle = -1;
-        }
+        send(handle, data.data(), data.size(), 0);
+    }
 
-        if (socketHandle > -1)
+    Socket::Connection::~Connection()
+    {
+        if (handle > -1)
         {
-            shutdown(socketHandle, SHUT_RDWR);
-            socketHandle = -1;
+            close(handle);
+            handle = -1;
         }
     }
+
 }

@@ -11,21 +11,42 @@
 #include <netinet/in.h>
 #include "HttpMessage.h++"
 
-namespace StiltFox::DialUp::Http
+namespace StiltFox::DialUp
 {
-    class Connection
+    class Socket
     {
-        int socketHandle, connectionHandle, queue;
+        int handle, queueSize;
         sockaddr_in address;
-        Connection();
-        void initializeValues(int portNumber, int queueSize);
-        bool openSocket();
 
     public:
-        static std::shared_ptr<Connection> openConnection(int portNumber, int queueSize = 3);
-        HttpMessage receiveData(long maxBytes, long maxWaitTime) const;
-        void sendData(HttpMessage data) const;
-        ~Connection();
+        Socket(int portNumber);
+        bool openPort(int queueSize = 3);
+        bool isOpen() const;
+        void closePort();
+        ~Socket();
+
+        class Connection
+        {
+            int handle;
+            long maxWaitTimeMS, maxDataSizeBytes;
+            Connection(int handle, long maxWaitTimeMS, long maxDataSizeBytes);
+
+        public:
+            struct Response
+            {
+                std::vector<char> data;
+                std::string errorMessage;
+            };
+
+            static std::shared_ptr<Connection> openConnection(
+                    const Socket& socket, long maxWaitTimeMS, long maxDataSizeBytes);
+            Response listen();
+            void sendData(const std::vector<char>& data);
+            ~Connection();
+
+        private:
+            void readSocketToBuffer(Response& rawData, bool& holt);
+        };
     };
 }
 #endif
