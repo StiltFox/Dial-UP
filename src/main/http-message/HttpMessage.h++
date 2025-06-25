@@ -23,11 +23,12 @@ namespace StiltFox::DialUp
         enum Method {GET,HEAD,POST,PUT,PATCH,DELETE,CONNECT,OPTIONS,TRACE,ERROR,NONE};
         int statusCode = 0;
         Method httpMethod = NONE;
-        std::string httpVersion, requestUri, statusReason, body;
+        std::string httpVersion, requestUri, body;
         std::unordered_map<std::string,std::vector<std::string>> headers;
 
+        HttpMessage(const std::vector<char>& data);
         HttpMessage(int statusCode, std::unordered_map<std::string,std::vector<std::string>> headers = {},
-            std::string body = "", const std::string& statusReason = "");
+            std::string body = "");
         HttpMessage(Method method, std::string uri = "*",
             std::unordered_map<std::string,std::vector<std::string>> headers = {}, std::string body = "");
         HttpMessage(const HttpMessage&);
@@ -41,4 +42,5 @@ namespace StiltFox::DialUp
         std::string printBodyAndHeaders() const;
     };
 }
+
 #endif

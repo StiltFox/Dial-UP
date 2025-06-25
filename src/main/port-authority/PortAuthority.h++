@@ -16,7 +16,10 @@ namespace StiltFox::DialUp
     class PortAuthority
     {
         int maxThreads;
+        long maxWaitTime, maxDataSize;
         std::shared_ptr<Socket> socket;
+
+        void connectionThreadHandler();
 
     public:
         EndpointRegistry registry;

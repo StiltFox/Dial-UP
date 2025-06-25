@@ -151,9 +151,15 @@ namespace StiltFox::DialUp
         return output;
     }
 
-    void Socket::Connection::sendData(const std::vector<char>& data)
+    void Socket::Connection::sendData(const std::vector<char>& data) const
     {
         send(handle, data.data(), data.size(), 0);
+    }
+
+    void Socket::Connection::sendData(const std::string& data) const
+    {
+        std::vector toSend(data.begin(), data.end());
+        sendData(toSend);
     }
 
     Socket::Connection::~Connection()

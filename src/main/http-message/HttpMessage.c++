@@ -5,6 +5,8 @@
 * See LICENSE on root project directory for terms
 * of use.
 ********************************************************/
+#include <stack>
+#include <cctype>
 #include "HttpMessage.h++"
 
 using namespace std;
@@ -58,12 +60,24 @@ namespace StiltFox::DialUp
         return stringMethods.contains(method) ? stringMethods[method] : HttpMessage::Method::ERROR;
     }
 
-    HttpMessage::HttpMessage(int status, unordered_map<string,vector<string>> head, string bod, const string& reason)
+    inline string parseToWhitespace(stack<char, vector<char>>& buffer)
+    {
+        string output;
+
+        while (!buffer.empty() && !isspace(buffer.top()))
+        {
+            output.push_back(buffer.top());
+            buffer.pop();
+        }
+
+        return output;
+    }
+
+    HttpMessage::HttpMessage(int status, unordered_map<string,vector<string>> head, string bod)
     {
         statusCode = status;
         httpMethod = NONE;
         httpVersion = "HTTP/1.1";
-        statusReason = reason.empty() ? getReasonCode(statusCode) : reason;
         headers = move(head);
         body = move(bod);
     }
@@ -78,12 +92,25 @@ namespace StiltFox::DialUp
         body = move(bod);
     }
 
+    HttpMessage::HttpMessage(const vector<char>& data)
+    {
+        stack parsingBuffer(data);
+
+        //remove whitespace before message if any
+        while (!parsingBuffer.empty() && isspace(parsingBuffer.top())) parsingBuffer.pop();
+
+        httpMethod = getMethodFromString(parseToWhitespace(parsingBuffer));
+        parsingBuffer.pop();
+        requestUri = parseToWhitespace(parsingBuffer);
+        parsingBuffer.pop();
+        httpVersion = parseToWhitespace(parsingBuffer);
+    }
+
     HttpMessage::HttpMessage(const HttpMessage& messageToCopy)
     {
         statusCode = messageToCopy.statusCode;
         httpMethod = messageToCopy.httpMethod;
         requestUri = messageToCopy.requestUri;
-        statusReason = messageToCopy.statusReason;
         httpVersion = messageToCopy.httpVersion;
         headers = messageToCopy.headers;
         body = messageToCopy.body;
@@ -127,22 +154,19 @@ namespace StiltFox::DialUp
     bool HttpMessage::operator==(const HttpMessage& other) const
     {
         return statusCode == other.statusCode && httpMethod == other.httpMethod && requestUri == other.requestUri
-               && statusReason == other.statusReason && headers == other.headers && body == other.body
-               && httpVersion == other.httpVersion;
+               && headers == other.headers && body == other.body && httpVersion == other.httpVersion;
     }
 
     bool HttpMessage::operator!=(const HttpMessage& other) const
     {
         return !(statusCode == other.statusCode && httpMethod == other.httpMethod && requestUri == other.requestUri
-                 && statusReason == other.statusReason && headers == other.headers && body == other.body
-                 && httpVersion == other.httpVersion);
+                 && headers == other.headers && body == other.body && httpVersion == other.httpVersion);
     }
 }
 
 // void HttpMessage::parseString(queue<char>& request)
 // {
 //     statusCode = 0;
-//     httpMethod = getMethodFromString(parseToDelim(request, ' '));
 //     requestUri = parseToDelim(request, ' ', '\n');
 //     requestUri.starts_with("HTTP") ? requestUri = "" : parseToDelim(request, '\n');
 //

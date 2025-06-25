@@ -41,7 +41,8 @@ namespace StiltFox::DialUp
             static std::shared_ptr<Connection> openConnection(
                     const Socket& socket, long maxWaitTimeMS, long maxDataSizeBytes);
             Response listen();
-            void sendData(const std::vector<char>& data);
+            void sendData(const std::vector<char>& data) const;
+            void sendData(const std::string& data) const;
             ~Connection();
 
         private:
