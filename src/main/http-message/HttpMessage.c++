@@ -5,7 +5,7 @@
 * See LICENSE on root project directory for terms
 * of use.
 ********************************************************/
-#include <stack>
+#include <queue>
 #include <cctype>
 #include "HttpMessage.h++"
 
@@ -60,17 +60,23 @@ namespace StiltFox::DialUp
         return stringMethods.contains(method) ? stringMethods[method] : HttpMessage::Method::ERROR;
     }
 
-    inline string parseToWhitespace(stack<char, vector<char>>& buffer)
+    inline string parseToDelim(queue<char, vector<char>>& toParse, char delim, char backupDelim)
     {
         string output;
 
-        while (!buffer.empty() && !isspace(buffer.top()))
+        while (!toParse.empty() && toParse.front() != delim && toParse.front() != backupDelim)
         {
-            output.push_back(buffer.top());
-            buffer.pop();
+            output += toParse.front();
+            toParse.pop();
         }
+        if (!toParse.empty()) toParse.pop();
 
         return output;
+    }
+
+    inline string parseToDelim(queue<char, vector<char>>& toParse, char delim)
+    {
+        return parseToDelim(toParse, delim, '\000');
     }
 
     HttpMessage::HttpMessage(int status, unordered_map<string,vector<string>> head, string bod)
@@ -92,18 +98,46 @@ namespace StiltFox::DialUp
         body = move(bod);
     }
 
-    HttpMessage::HttpMessage(const vector<char>& data)
+    HttpMessage::HttpMessage(const vector<char>& request)
     {
-        stack parsingBuffer(data);
+        queue parsingBuffer(request);
+        string currentToken;
 
-        //remove whitespace before message if any
-        while (!parsingBuffer.empty() && isspace(parsingBuffer.top())) parsingBuffer.pop();
+        //remove all starting whitespace
+        while (!parsingBuffer.empty() && isspace(parsingBuffer.front())) parsingBuffer.pop();
+        currentToken = parseToDelim(parsingBuffer, ' ', '\n');
 
-        httpMethod = getMethodFromString(parseToWhitespace(parsingBuffer));
-        parsingBuffer.pop();
-        requestUri = parseToWhitespace(parsingBuffer);
-        parsingBuffer.pop();
-        httpVersion = parseToWhitespace(parsingBuffer);
+        if (currentToken.starts_with("HTTP"))
+        {
+            // parse response
+            httpVersion = currentToken;
+            currentToken = parseToDelim(parsingBuffer, ' ', '\n');
+            try
+            {
+                statusCode = stoi(currentToken);
+            }
+            catch (...)
+            {
+                httpMethod = ERROR;
+                body = string(request.begin(), request.end());
+            }
+        }
+        else
+        {
+            //parse request
+            httpMethod = getMethodFromString(currentToken);
+        }
+
+        // while (!parsingBuffer.empty() && parsingBuffer.front() != '\r' && parsingBuffer.front() != '\n')
+        // {
+        //     string key = parseToDelim(parsingBuffer, ':');
+        //     if (parsingBuffer.front() == ' ') parsingBuffer.pop();
+        //     headers[key].emplace_back(parseToDelim(parsingBuffer, '\r'));
+        //     if (parsingBuffer.front() == '\n') parsingBuffer.pop();
+        // }
+        // if (parsingBuffer.front() == '\r') parseToDelim(parsingBuffer, '\n');
+        //
+        // body = parseToDelim(parsingBuffer, '\000');
     }
 
     HttpMessage::HttpMessage(const HttpMessage& messageToCopy)
@@ -138,7 +172,7 @@ namespace StiltFox::DialUp
 
     string HttpMessage::printAsResponse() const
     {
-        return httpVersion + " " + to_string(statusCode) + " " + statusReason+"\r\n" + printBodyAndHeaders();
+        return httpVersion + " " + to_string(statusCode) + " " + getReasonCode(statusCode) +"\r\n" + printBodyAndHeaders();
     }
 
     string HttpMessage::printAsRequest() const
@@ -163,40 +197,3 @@ namespace StiltFox::DialUp
                  && headers == other.headers && body == other.body && httpVersion == other.httpVersion);
     }
 }
-
-// void HttpMessage::parseString(queue<char>& request)
-// {
-//     statusCode = 0;
-//     requestUri = parseToDelim(request, ' ', '\n');
-//     requestUri.starts_with("HTTP") ? requestUri = "" : parseToDelim(request, '\n');
-//
-//     while (!request.empty() && request.front() != '\r' && request.front() != '\n')
-//     {
-//         string key = parseToDelim(request, ':');
-//         if (request.front() == ' ') request.pop();
-//         headers[key] = parseToDelim(request, '\r');
-//         if (request.front() == '\n') request.pop();
-//     }
-//     if (request.front() == '\r') parseToDelim(request, '\n');
-//
-//     body = parseToDelim(request, '\000');
-// }
-
-// inline string parseToDelim(queue<char>& toParse, char delim, char backupDelim)
-// {
-//     string output;
-//
-//     while (!toParse.empty() && toParse.front() != delim && toParse.front() != backupDelim)
-//     {
-//         output += toParse.front();
-//         toParse.pop();
-//     }
-//     if (!toParse.empty()) toParse.pop();
-//
-//     return output;
-// }
-//
-// inline string parseToDelim(queue<char>& toParse, char delim)
-// {
-//     return parseToDelim(toParse, delim, '\000');
-// }
