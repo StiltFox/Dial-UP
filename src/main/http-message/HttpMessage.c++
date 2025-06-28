@@ -60,7 +60,7 @@ namespace StiltFox::DialUp
         return stringMethods.contains(method) ? stringMethods[method] : HttpMessage::Method::ERROR;
     }
 
-    inline string parseToDelim(queue<char, vector<char>>& toParse, char delim, char backupDelim)
+    inline string parseToDelim(queue<char>& toParse, char delim, char backupDelim)
     {
         string output;
 
@@ -74,9 +74,37 @@ namespace StiltFox::DialUp
         return output;
     }
 
-    inline string parseToDelim(queue<char, vector<char>>& toParse, char delim)
+    inline string parseToDelim(queue<char>& toParse, char delim)
     {
         return parseToDelim(toParse, delim, '\000');
+    }
+
+    inline void trimLeadingSpaces(queue<char>& toParse)
+    {
+        while (!toParse.empty() && isspace(toParse.front())) toParse.pop();
+    }
+
+    inline unordered_map<string, vector<string>> parseHeaders(queue<char>& toParse)
+    {
+        unordered_map<string, vector<string>> headers;
+
+        while (!toParse.empty() && toParse.front() != '\r' && toParse.front() != '\n')
+        {
+            string key = parseToDelim(toParse, ':');
+            if (toParse.front() == ' ') toParse.pop();
+            headers[key].emplace_back(parseToDelim(toParse, '\r'));
+            if (toParse.front() == '\n') toParse.pop();
+        }
+
+        return headers;
+    }
+
+    inline queue<char> getLine(queue<char>& toParse)
+    {
+        trimLeadingSpaces(toParse);
+        string outputLine = parseToDelim(toParse, '\n');
+
+        return queue(deque(outputLine.begin(), outputLine.end()));
     }
 
     HttpMessage::HttpMessage(int status, unordered_map<string,vector<string>> head, string bod)
@@ -98,13 +126,13 @@ namespace StiltFox::DialUp
         body = move(bod);
     }
 
-    HttpMessage::HttpMessage(const vector<char>& request)
+    HttpMessage::HttpMessage(const std::vector<char>& request)
     {
-        queue parsingBuffer(request);
+        queue parsingBuffer(deque(request.begin(), request.end()));
         string currentToken;
 
         //remove all starting whitespace
-        while (!parsingBuffer.empty() && isspace(parsingBuffer.front())) parsingBuffer.pop();
+
         currentToken = parseToDelim(parsingBuffer, ' ', '\n');
 
         if (currentToken.starts_with("HTTP"))
@@ -128,13 +156,9 @@ namespace StiltFox::DialUp
             httpMethod = getMethodFromString(currentToken);
         }
 
-        // while (!parsingBuffer.empty() && parsingBuffer.front() != '\r' && parsingBuffer.front() != '\n')
-        // {
-        //     string key = parseToDelim(parsingBuffer, ':');
-        //     if (parsingBuffer.front() == ' ') parsingBuffer.pop();
-        //     headers[key].emplace_back(parseToDelim(parsingBuffer, '\r'));
-        //     if (parsingBuffer.front() == '\n') parsingBuffer.pop();
-        // }
+        headers = parseHeaders(parsingBuffer);
+
+
         // if (parsingBuffer.front() == '\r') parseToDelim(parsingBuffer, '\n');
         //
         // body = parseToDelim(parsingBuffer, '\000');
