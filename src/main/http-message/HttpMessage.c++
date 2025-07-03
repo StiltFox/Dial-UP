@@ -84,6 +84,19 @@ namespace StiltFox::DialUp
         while (!toParse.empty() && isspace(toParse.front())) toParse.pop();
     }
 
+    inline vector<string> parsePotentialMultiValueHeader(const string& value, vector<string> output)
+    {
+        queue toParse(deque(value.begin(), value.end()));
+
+        while (!toParse.empty())
+        {
+            output.push_back(parseToDelim(toParse, ',', '\0'));
+            if (!toParse.empty() && toParse.front() == ' ') toParse.pop();
+        }
+
+        return output;
+    }
+
     inline unordered_map<string, vector<string>> parseHeaders(queue<char>& toParse)
     {
         unordered_map<string, vector<string>> headers;
@@ -92,7 +105,8 @@ namespace StiltFox::DialUp
         {
             string key = parseToDelim(toParse, ':');
             if (toParse.front() == ' ') toParse.pop();
-            headers[key].emplace_back(parseToDelim(toParse, '\r'));
+            string headerValues = parseToDelim(toParse, '\r');
+            parsePotentialMultiValueHeader(headerValues, headers[key]);
             if (toParse.front() == '\n') toParse.pop();
         }
 
@@ -129,39 +143,34 @@ namespace StiltFox::DialUp
     HttpMessage::HttpMessage(const std::vector<char>& request)
     {
         queue parsingBuffer(deque(request.begin(), request.end()));
-        string currentToken;
+        // currentToken = parseToDelim(parsingBuffer, ' ', '\n');
 
-        //remove all starting whitespace
-
-        currentToken = parseToDelim(parsingBuffer, ' ', '\n');
-
-        if (currentToken.starts_with("HTTP"))
-        {
-            // parse response
-            httpVersion = currentToken;
-            currentToken = parseToDelim(parsingBuffer, ' ', '\n');
-            try
-            {
-                statusCode = stoi(currentToken);
-            }
-            catch (...)
-            {
-                httpMethod = ERROR;
-                body = string(request.begin(), request.end());
-            }
-        }
-        else
-        {
-            //parse request
-            httpMethod = getMethodFromString(currentToken);
-        }
+        // if (currentToken.starts_with("HTTP"))
+        // {
+        //     // parse response
+        //     httpVersion = currentToken;
+        //     currentToken = parseToDelim(parsingBuffer, ' ', '\n');
+        //     try
+        //     {
+        //         statusCode = stoi(currentToken);
+        //     }
+        //     catch (...)
+        //     {
+        //         httpMethod = ERROR;
+        //         body = string(request.begin(), request.end());
+        //     }
+        // }
+        // else
+        // {
+        //     //parse request
+        //     httpMethod = getMethodFromString(currentToken);
+        // }
+        queue<char> firstLine = getLine(parsingBuffer);
 
         headers = parseHeaders(parsingBuffer);
 
-
-        // if (parsingBuffer.front() == '\r') parseToDelim(parsingBuffer, '\n');
-        //
-        // body = parseToDelim(parsingBuffer, '\000');
+        if (parsingBuffer.front() == '\r') parseToDelim(parsingBuffer, '\n');
+        body = parseToDelim(parsingBuffer, '\000');
     }
 
     HttpMessage::HttpMessage(const HttpMessage& messageToCopy)
