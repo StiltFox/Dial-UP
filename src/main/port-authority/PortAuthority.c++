@@ -22,9 +22,11 @@ namespace StiltFox::DialUp
         auto connection = Socket::Connection::openConnection(*socket, maxWaitTime, maxDataSize);
         auto request = connection->listen();
 
-        if (request.errorMessage == "")
+        if (request.errorMessage.empty())
         {
             HttpMessage message = request.data;
+            HttpMessage response = registry.submitMessage(message);
+            connection->sendData(response.printAsResponse());
         }
         else
         {

@@ -121,6 +121,36 @@ namespace StiltFox::DialUp
         return queue(deque(outputLine.begin(), outputLine.end()));
     }
 
+    inline void parseFirstLine(HttpMessage* toWriteTo, queue<char>& toParse)
+    {
+        if (toWriteTo != nullptr)
+        {
+            string token = parseToDelim(toParse, ' ');
+
+            if (token.starts_with("HTTP"))
+            {
+                toWriteTo->httpVersion = token;
+                token = parseToDelim(toParse, ' ');
+
+                try
+                {
+                    toWriteTo->statusCode = stoi(token);
+                }
+                catch(...)
+                {
+                    toWriteTo->statusCode = 0;
+                }
+                //ignore the rest, status reason is not needed.
+            }
+            else
+            {
+                toWriteTo->httpMethod = getMethodFromString(token);
+                toWriteTo->requestUri = parseToDelim(toParse, ' ');
+                toWriteTo->httpVersion = parseToDelim(toParse, ' ');
+            }
+        }
+    }
+
     HttpMessage::HttpMessage(int status, unordered_map<string,vector<string>> head, string bod)
     {
         statusCode = status;
@@ -143,30 +173,9 @@ namespace StiltFox::DialUp
     HttpMessage::HttpMessage(const std::vector<char>& request)
     {
         queue parsingBuffer(deque(request.begin(), request.end()));
-        // currentToken = parseToDelim(parsingBuffer, ' ', '\n');
-
-        // if (currentToken.starts_with("HTTP"))
-        // {
-        //     // parse response
-        //     httpVersion = currentToken;
-        //     currentToken = parseToDelim(parsingBuffer, ' ', '\n');
-        //     try
-        //     {
-        //         statusCode = stoi(currentToken);
-        //     }
-        //     catch (...)
-        //     {
-        //         httpMethod = ERROR;
-        //         body = string(request.begin(), request.end());
-        //     }
-        // }
-        // else
-        // {
-        //     //parse request
-        //     httpMethod = getMethodFromString(currentToken);
-        // }
         queue<char> firstLine = getLine(parsingBuffer);
 
+        parseFirstLine(this, firstLine);
         headers = parseHeaders(parsingBuffer);
 
         if (parsingBuffer.front() == '\r') parseToDelim(parsingBuffer, '\n');
