@@ -84,7 +84,7 @@ namespace StiltFox::DialUp
         while (!toParse.empty() && isspace(toParse.front())) toParse.pop();
     }
 
-    inline vector<string> parsePotentialMultiValueHeader(const string& value, vector<string> output)
+    inline vector<string> parsePotentialMultiValueHeader(const string& value, vector<string>& output)
     {
         queue toParse(deque(value.begin(), value.end()));
 
@@ -116,7 +116,8 @@ namespace StiltFox::DialUp
     inline queue<char> getLine(queue<char>& toParse)
     {
         trimLeadingSpaces(toParse);
-        string outputLine = parseToDelim(toParse, '\n');
+        string outputLine = parseToDelim(toParse, '\r', '\n');
+        if (toParse.front() == '\n') toParse.pop();
 
         return queue(deque(outputLine.begin(), outputLine.end()));
     }
@@ -214,7 +215,8 @@ namespace StiltFox::DialUp
 
     string HttpMessage::printAsResponse() const
     {
-        return httpVersion + " " + to_string(statusCode) + " " + getReasonCode(statusCode) +"\r\n" + printBodyAndHeaders();
+        return httpVersion + " " + to_string(statusCode) + " " + getReasonCode(statusCode) +"\r\n" +
+            printBodyAndHeaders();
     }
 
     string HttpMessage::printAsRequest() const

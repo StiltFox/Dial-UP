@@ -17,14 +17,17 @@ namespace StiltFox::DialUp
     {
         int maxThreads;
         long maxWaitTime, maxDataSize;
-        std::shared_ptr<Socket> socket;
+        std::shared_ptr<Socket> socket, killSocket;
+        static const HttpMessage KILL_MESSAGE;
 
         void connectionThreadHandler();
+        void listenForKillCommand();
 
     public:
         EndpointRegistry registry;
 
-        PortAuthority(int portNumber, int maxWorkerThreads);
+        PortAuthority(int portNumber, int killPortNumber, int maxWorkerThreads, long maxWaitTime=10000,
+            long maxDataSize=80000000);
     };
 }
 #endif
