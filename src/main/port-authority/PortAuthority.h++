@@ -19,6 +19,7 @@ namespace StiltFox::DialUp
         long maxWaitTime, maxDataSize;
         std::shared_ptr<Socket> socket, killSocket;
         static const HttpMessage KILL_MESSAGE;
+        std::thread** workers;
 
         void connectionThreadHandler();
         void listenForKillCommand();

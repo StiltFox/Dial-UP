@@ -5,6 +5,7 @@
 * See LICENSE on root project directory for terms
 * of use.
 ********************************************************/
+#include <thread>
 #include "PortAuthority.h++"
 
 using namespace std;
@@ -41,22 +42,29 @@ namespace StiltFox::DialUp
         maxThreads = maxWorkerThreads;
         this->maxWaitTime = maxWaitTime;
         this->maxDataSize = maxDataSize;
+        workers = new thread*[maxWorkerThreads];
+
+        thread killThread(listenForKillCommand); //We will not track this later. Just let it go.
+        for (int x=0; x<maxWorkerThreads; x++) workers[x] = new thread(connectionThreadHandler);
     }
 
     void PortAuthority::connectionThreadHandler()
     {
-        auto connection = Socket::Connection::openConnection(*socket, maxWaitTime, maxDataSize);
-        auto request = connection->listen();
+        while (socket->isOpen())
+        {
+            auto connection = Socket::Connection::openConnection(*socket, maxWaitTime, maxDataSize);
+            auto request = connection->listen();
 
-        if (request.errorMessage.empty())
-        {
-            HttpMessage message = request.data;
-            HttpMessage response = registry.submitMessage(message);
-            connection->sendData(response.printAsResponse());
-        }
-        else
-        {
-            connection->sendData(generateErrorFromResponse(request.errorMessage).printAsResponse());
+            if (request.errorMessage.empty())
+            {
+                HttpMessage message = request.data;
+                HttpMessage response = registry.submitMessage(message);
+                connection->sendData(response.printAsResponse());
+            }
+            else
+            {
+                connection->sendData(generateErrorFromResponse(request.errorMessage).printAsResponse());
+            }
         }
     }
 
@@ -67,17 +75,28 @@ namespace StiltFox::DialUp
 
         while (cont)
         {
-            auto response = connection->listen();
+            auto request = connection->listen();
 
-            if (response.errorMessage.empty())
+            if (request.errorMessage.empty())
             {
-                cont = false;
-                socket->closePort();
-                connection->sendData();
+                HttpMessage requestMessage = request.data;
+
+                if (requestMessage == KILL_MESSAGE)
+                {
+                    HttpMessage response = {200,{{"Content-Type",{"text/plain"}}},"shutting down"};
+                    cont = false;
+                    socket->closePort();
+                    connection->sendData(response.printAsResponse());
+                }
+                else
+                {
+                    HttpMessage failResponse = {400,{{"Content-Type",{"text/plain"}}},"unknown command"};
+                    connection->sendData(failResponse.printAsResponse());
+                }
             }
             else
             {
-                connection->sendData(generateErrorFromResponse(response.errorMessage).printAsResponse());
+                connection->sendData(generateErrorFromResponse(request.errorMessage).printAsResponse());
             }
         }
     }
