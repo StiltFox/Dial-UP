@@ -5,4 +5,5 @@ if(NOT SFSkipTests)
     add_subdirectory(print_helper)
 
     add_subdirectory(http-message)
+    add_subdirectory(server-socket)
 endif ()

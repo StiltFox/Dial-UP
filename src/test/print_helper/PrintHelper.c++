@@ -6,6 +6,11 @@
 * of use.
 ********************************************************/
 #include "PrintHelper.h++"
+
+#include <codecvt>
+#include <codecvt>
+#include <locale>
+#include <locale>
 #include <nlohmann/json.hpp>
 
 using namespace std;

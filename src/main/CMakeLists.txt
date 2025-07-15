@@ -1,5 +1,4 @@
 add_subdirectory(http-message)
-add_subdirectory(socket)
+add_subdirectory(server-socket)
 add_subdirectory(endpoint-registry)
-add_subdirectory(thread-pool)
 add_subdirectory(port-authority)

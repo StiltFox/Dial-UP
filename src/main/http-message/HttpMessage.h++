@@ -40,6 +40,7 @@ namespace StiltFox::DialUp
 
     protected:
         std::string printBodyAndHeaders() const;
+        void parse(const std::vector<char>& data);
     };
 }
 

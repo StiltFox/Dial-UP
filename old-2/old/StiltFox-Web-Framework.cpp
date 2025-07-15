@@ -1,9 +1,3 @@
-#include "StiltFox-Web-Framework.hpp"
-#include <iostream>
-
-using namespace std;
-using namespace StiltFox::Web::Framework;
-
 string branding = "\n"
                   "  @@@@@@  @@@@@@@@ @@@@ @@       @@@@@@@@    @@@@@@@@  @@@@@@@  @@     @@\n"
                   " @@    @@    @@     @@  @@          @@       @@       @@     @@  @@   @@ \n"
@@ -38,18 +32,3 @@ string branding = "\n"
                   "                                                  @             \n"
                   "https://www.stiltfox.com\n"
                   "https://donate.stiltfox.com";
-
-WebApp::WebApp(std::string configurationLocation)
-{
-    configuration = new ConfigurationLoader(configurationLocation);
-}
-
-void WebApp::start()
-{
-    configuration->logger->bypass(branding);
-}
-
-WebApp::~WebApp()
-{
-    delete configuration;
-}

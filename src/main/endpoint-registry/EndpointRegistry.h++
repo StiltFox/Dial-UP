@@ -12,6 +12,13 @@
 
 namespace StiltFox::DialUp
 {
+    /*******************************************************************************************************************
+     * Most web frameworks have the idea of an endpoint. An endpoint is where the program accepts an Http request
+     * directed at a particular path. For example http://example.com/pickles is one endpoint, and
+     * http://example.com/crackers/cheese is another endpoint. The endpoints referring to the part after the hostname
+     * of course.
+     * In this instance an 'endpoint' can be any function that takes in an HttpMessage, and then returns one.
+     ******************************************************************************************************************/
     typedef std::function<HttpMessage(HttpMessage)> Endpoint;
 
     class EndpointRegistry

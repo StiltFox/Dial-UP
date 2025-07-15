@@ -37,22 +37,45 @@ namespace StiltFox::DialUp
     PortAuthority::PortAuthority(int portNumber, int killPortNumber, int maxWorkerThreads, long maxWaitTime,
         long maxDataSize)
     {
-        socket = make_shared<Socket>(portNumber);
-        killSocket = make_shared<Socket>(killPortNumber);
+        socket = make_shared<ServerSocket>(portNumber);
+        killSocket = make_shared<ServerSocket>(killPortNumber);
         maxThreads = maxWorkerThreads;
         this->maxWaitTime = maxWaitTime;
         this->maxDataSize = maxDataSize;
-        workers = new thread*[maxWorkerThreads];
+        workers = nullptr;
+    }
+
+    void PortAuthority::startApplication()
+    {
+        if (workers == nullptr) workers = new thread*[maxThreads];
+        if (!socket->isOpen()) socket->openPort();
+        if (!killSocket->isOpen()) killSocket->openPort();
 
         thread killThread(listenForKillCommand); //We will not track this later. Just let it go.
-        for (int x=0; x<maxWorkerThreads; x++) workers[x] = new thread(connectionThreadHandler);
+        for (int x=0; x<maxThreads; x++) workers[x] = new thread(connectionThreadHandler);
+    }
+
+    void PortAuthority::stopApplication()
+    {
+        socket->closePort();
+        killSocket->closePort();
+
+        for (int x=0; x<maxThreads; x++)
+        {
+            workers[x]->join();
+            delete workers[x];
+            workers[x] = nullptr;
+        }
+
+        delete[] workers;
+        workers = nullptr;
     }
 
     void PortAuthority::connectionThreadHandler()
     {
         while (socket->isOpen())
         {
-            auto connection = Socket::Connection::openConnection(*socket, maxWaitTime, maxDataSize);
+            auto connection = ServerSocket::Connection::openConnection(*socket, maxWaitTime, maxDataSize);
             auto request = connection->listen();
 
             if (request.errorMessage.empty())
@@ -70,7 +93,7 @@ namespace StiltFox::DialUp
 
     void PortAuthority::listenForKillCommand()
     {
-        const auto connection = Socket::Connection::openConnection(*killSocket, 500, 1000);
+        const auto connection = ServerSocket::Connection::openConnection(*killSocket, 500, 1000);
         bool cont = true;
 
         while (cont)
@@ -99,5 +122,10 @@ namespace StiltFox::DialUp
                 connection->sendData(generateErrorFromResponse(request.errorMessage).printAsResponse());
             }
         }
+    }
+
+    PortAuthority::~PortAuthority()
+    {
+        stopApplication();
     }
 }

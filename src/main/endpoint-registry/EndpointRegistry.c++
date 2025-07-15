@@ -29,7 +29,7 @@ namespace StiltFox::DialUp
 
     HttpMessage EndpointRegistry::submitMessage(const HttpMessage& message)
     {
-        HttpMessage output = {404, {}, "", "Not Found"};
+        HttpMessage output = {404, {}, ""};
 
         if (endpoints.contains(message.requestUri))
         {
@@ -40,7 +40,6 @@ namespace StiltFox::DialUp
             else
             {
                 output.statusCode = 405;
-                output.statusReason = "Method Not Allowed";
             }
         }
 

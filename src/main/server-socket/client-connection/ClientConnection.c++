@@ -10,13 +10,29 @@
 #include <cstring>
 #include <thread>
 #include <mutex>
+#include <queue>
 #include "ClientConnection.h++"
+
+#include <stack>
+#include <nlohmann/detail/input/parser.hpp>
 
 using namespace std;
 
 namespace StiltFox::DialUp
 {
     mutex readLock;
+
+    inline void trimWhitespaceFromStartOfMessage(vector<char>& rawData)
+    {
+        queue dataQueue(deque(rawData.begin(), rawData.end()));
+        while (!dataQueue.empty() && (isspace(dataQueue.front()) || iscntrl(dataQueue.front()))) dataQueue.pop();
+        rawData.clear();
+        while (!dataQueue.empty())
+        {
+            rawData.emplace_back(dataQueue.front());
+            dataQueue.pop();
+        }
+    }
 
     ClientConnection::ClientConnection(int socketHandle, sockaddr_in address, long maxWaitTimeMs, long maxDataSizeBytes)
     {
@@ -29,15 +45,14 @@ namespace StiltFox::DialUp
 
     void ClientConnection::readSocketToBuffer(Response& rawData, bool& holt)
     {
-        const long bufferSize = maxDataSizeBytes > 1024 ? 1024 : maxDataSizeBytes;
-        long numIterations = bufferSize / maxDataSizeBytes;
-        char buffer[bufferSize];
+        long numIterations = maxDataSizeBytes / 1024;
+        char buffer[1024] = {};
 
-        if (bufferSize % maxDataSizeBytes > 0) numIterations++;
+        if (maxDataSizeBytes % 1024 > 0) numIterations++;
 
         do
         {
-            memset(buffer, 0, bufferSize);
+            memset(buffer, 0, 1024);
 
             numIterations--;
             if (numIterations < 0)
@@ -47,13 +62,15 @@ namespace StiltFox::DialUp
                 break;
             }
 
-            read(handle, buffer, bufferSize);
-            for (int y=0; y < bufferSize; y++)
+            read(handle, buffer, 1024);
+            for (int y=0; y < 1024; y++)
             {
                 lock_guard guard(readLock);
                 rawData.data.emplace_back(buffer[y]);
             }
-        } while ((buffer[bufferSize -1] != 0) && !holt);
+        } while ((buffer[1024 -1] != '\000') && !holt);
+
+        trimWhitespaceFromStartOfMessage(rawData.data);
 
         lock_guard guard(readLock);
         holt = true;
@@ -65,22 +82,30 @@ namespace StiltFox::DialUp
         Response output = {{},""};
         bool holt = false;
 
-        int addressLength = sizeof(sockaddr_in);
-        handle = accept(socketHandle, (sockaddr*)&address,(socklen_t*)&addressLength);
+        socklen_t addressLength = sizeof(address);
+        handle = accept(socketHandle, (sockaddr*)&address,&addressLength);
 
-        auto startTime = chrono::high_resolution_clock::now();
-        thread socketThread([&output, this, &holt]()
+        if (handle == -1)
         {
-            readSocketToBuffer(output, holt);
-        });
-
-        while (chrono::high_resolution_clock::now() - startTime < chrono::milliseconds(maxWaitTimeMs) && !holt);
-
-        if (!holt)
+            output.errorMessage = strerror(errno);
+        }
+        else
         {
-            lock_guard guard(readLock);
-            holt = true;
-            output.errorMessage = "Connection timed out";
+            auto startTime = chrono::high_resolution_clock::now();
+            thread socketThread([this, &output, &holt]()
+            {
+                readSocketToBuffer(output, holt);
+            });
+
+            while (chrono::high_resolution_clock::now() - startTime < chrono::milliseconds(maxWaitTimeMs) && !holt);
+            socketThread.join();
+
+            if (!holt)
+            {
+                lock_guard guard(readLock);
+                holt = true;
+                output.errorMessage = "Connection timed out";
+            }
         }
 
         return output;
@@ -109,5 +134,4 @@ namespace StiltFox::DialUp
     {
         terminate();
     }
-
 }

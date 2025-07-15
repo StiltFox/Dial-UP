@@ -25,7 +25,7 @@ namespace StiltFox::DialUp
         bool openPort(int queueSize = 3);
         bool isOpen() const;
         int getHandle() const;
-        sockaddr_in getAddress() const;d
+        sockaddr_in getAddress() const;
         void closePort();
         std::shared_ptr<ClientConnection> createClientConnection();
 
