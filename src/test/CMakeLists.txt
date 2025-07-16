@@ -6,4 +6,5 @@ if(NOT SFSkipTests)
 
     add_subdirectory(http-message)
     add_subdirectory(server-socket)
+    add_subdirectory(endpoint-registry)
 endif ()

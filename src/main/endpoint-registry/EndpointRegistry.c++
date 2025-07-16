@@ -7,6 +7,8 @@
 ********************************************************/
 #include "EndpointRegistry.h++"
 
+#include <ranges>
+
 using namespace std;
 
 namespace StiltFox::DialUp
@@ -27,9 +29,19 @@ namespace StiltFox::DialUp
         }
     }
 
+    unordered_map<string, unordered_set<HttpMessage::Method>> EndpointRegistry::getRegisteredEndpoints() const
+    {
+        unordered_map<string, unordered_set<HttpMessage::Method>> output;
+
+        for (const auto& url : endpoints)
+            for (const auto &method: url.second | views::keys) output[url.first].emplace(method);
+
+        return output;
+    }
+
     HttpMessage EndpointRegistry::submitMessage(const HttpMessage& message)
     {
-        HttpMessage output = {404, {}, ""};
+        HttpMessage output = {404,{},""};
 
         if (endpoints.contains(message.requestUri))
         {

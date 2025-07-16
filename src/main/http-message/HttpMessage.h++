@@ -20,12 +20,26 @@ namespace StiltFox::DialUp
      *****************************************************************************************************************/
     struct HttpMessage
     {
+        /***************************************************************************************************************
+         * This enum keeps track of all the different HttpMethods that can be accepted. There are two special cases
+         * however that should be treated differently.
+         *
+         * - ERROR - This is intended to represent that an error has occurred during parsing. If a method in this class
+         *           returns an HttpMessage with a method of ERROR, check the body for the malformed request that failed
+         *           parsing. DO NOT USE THIS MANUALLY TO BUILD A REQUEST.
+         * - NONE - This is to indicate that there is no HTTP method. This is just a default placeholder for building
+         *          Http Responses, as responses do not use this field. DO NOT USE THIS TO MANUALLY BUILD A REQUEST.
+         **************************************************************************************************************/
         enum Method {GET,HEAD,POST,PUT,PATCH,DELETE,CONNECT,OPTIONS,TRACE,ERROR,NONE};
         int statusCode = 0;
         Method httpMethod = NONE;
         std::string httpVersion, requestUri, body;
         std::unordered_map<std::string,std::vector<std::string>> headers;
 
+        /***************************************************************************************************************
+         * This constructor is used to create an Http Message from an vector of raw bytes. This is useful because things
+         * like websockets typically return raw binary data. This can be used to parse either a request or a response.
+         **************************************************************************************************************/
         HttpMessage(const std::vector<char>& data);
         HttpMessage(int statusCode, std::unordered_map<std::string,std::vector<std::string>> headers = {},
             std::string body = "");
