@@ -71,15 +71,39 @@ namespace StiltFox::DialUp
          **************************************************************************************************************/
         HttpMessage(const HttpMessage& message);
         /***************************************************************************************************************
+         * This returns the Http Method as an upper case string representation. This is used to help with maps and such
+         * as the Http Method is actually stored as an enum.
          *
+         * @return returns the upper case string representation of the Http Method.
          **************************************************************************************************************/
         std::string getHttpMethodAsString() const;
+        /***************************************************************************************************************
+         * This method will print the Http Message as an Http Response. This will ignore any data that's only relevant
+         * to a request. So let's say you have something like the Method set. This data will be ignored.
+         *
+         * @return returns the string representation of the data as an Http Response. Ignores all unnecessary data.
+         **************************************************************************************************************/
         std::string printAsResponse() const;
+        /***************************************************************************************************************
+         * This method will print the Http Message as an Http Request. This will ignore any data that's only relevant
+         * to a response. So let's say you have something like the status code set. This data will be ignored.
+         *
+         * @return returns teh string representation of the data as an Http Request. Ignores all unnecessary data.
+         **************************************************************************************************************/
         std::string printAsRequest() const;
+        /***************************************************************************************************************
+         * These methods overload the equality operators. These simply do a field by field comparison of the two objects
+         * and then returns the results. The idea of a message being a request or a response is irrelevant here.
+         **************************************************************************************************************/
         bool operator==(const HttpMessage&) const;
         bool operator!=(const HttpMessage&) const;
 
     protected:
+        /***************************************************************************************************************
+         * These methods are for internal use only. These will not be document like the other methods. If you wish to
+         * understand them, because you're actively developing this class or extending it, it would be best for you to
+         * familiarize yourself with the code.
+         **************************************************************************************************************/
         std::string printBodyAndHeaders() const;
         void parse(const std::vector<char>& data);
     };
