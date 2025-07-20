@@ -6,6 +6,7 @@
 * of use.
 ********************************************************/
 #include <codecvt>
+#include <thread>
 #include <gtest/gtest.h>
 #include <curl/curl.h>
 #include "PrintHelper.h++"
@@ -74,38 +75,36 @@ namespace StiltFox::DialUp
 
     TEST(Connection, receiveData_will_get_the_information_sent_to_it_by_the_client)
     {
-        // //given we have a port that we're listing to
-        // auto openPort = make_shared<ServerSocket>(4200);
-        // openPort->openPort();
-        // HttpMessage expectedData(HttpMessage::PUT, "/asdf", {}, "漬物はいいですよね。");
-        //
-        // //when we open a connection
-        // std::shared_ptr<HttpMessage> actual = make_shared<HttpMessage>(HttpMessage::Method::ERROR);
-        //
-        // thread connectionListenerThread([openPort, &actual](){
-        //     ClientConnection clientConnection(openPort->getHandle(), openPort->getAddress());
-        //     const auto responseData = clientConnection.receiveData();
-        //     wstring_convert<codecvt_utf8<wchar_t>> converter;
-        //     string responseDataString(responseData.data.begin(), responseData.data.end());
-        //     // auto data = converter.from_bytes(responseData.data);
-        //     // auto parsedData = converter.to_bytes(data);
-        //     actual = make_shared<HttpMessage>(vector<char>{});
-        // });
-        //
-        // //and we send data to the port
-        // CURL* curl;
-        //
-        // curl = curl_easy_init();
-        // curl_easy_setopt(curl, CURLOPT_URL, "https://localhost:4200/asdf");
-        // curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, expectedData.body.size());
-        // curl_easy_setopt(curl, CURLOPT_POSTFIELDS, expectedData.body);
-        // curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);
-        // curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);
-        // curl_easy_perform(curl);
-        // curl_easy_cleanup(curl);
-        // connectionListenerThread.join();
-        //
-        // //then the data is received
-        // EXPECT_EQ(*actual, expectedData);
+        //given we have a port that we're listing to
+        auto openPort = make_shared<ServerSocket>(4200);
+        openPort->openPort();
+        HttpMessage expectedData(HttpMessage::POST, "/asdf", {
+            {"Accept",{"*/*"}},
+            {"Content-Length",{"30"}},
+            {"Content-Type",{"application/x-www-form-urlencoded"}},
+            {"Host", {"localhost:4200"}}
+        }, "漬物はいいですよね。");
+
+        //when we open a connection
+        auto actual = make_shared<HttpMessage>(HttpMessage::Method::ERROR);
+
+        thread connectionListenerThread([openPort, &actual](){
+            ClientConnection clientConnection(openPort->getHandle(), openPort->getAddress());
+            const auto responseData = clientConnection.receiveData();
+            actual = make_shared<HttpMessage>(responseData.data);
+        });
+
+        //and we send data to the port
+        CURL* curl;
+
+        curl = curl_easy_init();
+        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:4200/asdf");
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, expectedData.body.c_str());
+        curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+        connectionListenerThread.join();
+
+        //then the data is received
+        EXPECT_EQ(*actual, expectedData);
     }
 }
