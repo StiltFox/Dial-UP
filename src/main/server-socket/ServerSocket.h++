@@ -33,6 +33,13 @@ namespace StiltFox::DialUp
          **************************************************************************************************************/
         ServerSocket(int portNumber);
 
+        /***************************************************************************************************************
+         * This function will attempt to open up the socket and bind it to the requested port number. This function must
+         * be called first, before using any other function of this object. If the socket is not open the other
+         * functions will return default values.
+         *
+         * @param queueSize -
+         **************************************************************************************************************/
         bool openPort(int queueSize = 3);
         bool isOpen() const;
         int getHandle() const;
