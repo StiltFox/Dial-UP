@@ -60,11 +60,19 @@ namespace StiltFox::DialUp
          * @param uri - This is a string that represents the path of the url after the host name. IE: /admin
          *              defaults to "*".
          * @param headers - A map of headers, each one able to support multiple values. Defaults to empty map
-         * @param body - ....
+         * @param body - A string representing the body of the message you wish to send. Defaults to an empty string.
          **************************************************************************************************************/
         HttpMessage(Method method, std::string uri = "*",
             std::unordered_map<std::string,std::vector<std::string>> headers = {}, std::string body = "");
-        HttpMessage(const HttpMessage&);
+        /***************************************************************************************************************
+         * This constructor creates a deep copy of the message passed in.
+         *
+         * @param message = the message to copy the data from.
+         **************************************************************************************************************/
+        HttpMessage(const HttpMessage& message);
+        /***************************************************************************************************************
+         *
+         **************************************************************************************************************/
         std::string getHttpMethodAsString() const;
         std::string printAsResponse() const;
         std::string printAsRequest() const;
