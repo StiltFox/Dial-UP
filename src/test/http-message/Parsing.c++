@@ -10,7 +10,7 @@
 
 using namespace std;
 
-namespace StiltFox::DialUp
+namespace StiltFox::DialUp::Tests::HttpMessageTests::Constructor
 {
     inline vector<char> stringToVector(const string& str)
     {
@@ -110,6 +110,81 @@ namespace StiltFox::DialUp
         //then we get back the message parsed properly
         const HttpMessage expected = {HttpMessage::POST,"/test/path",
             {{"test",{"bingo","paddle board","pepperoni","pickle"}}},"body text"};
+        EXPECT_EQ(expected, actual);
+    }
+
+    TEST(Constructor, will_parse_an_http_message_without_headers_or_a_body_property)
+    {
+        //given we have a http request with only the first line
+        const string request = "GET /path HTTP/1.1";
+        const string requestWithNewLine = "GET /path HTTP/1.1\r\n";
+        const string requestWithDoubleNewLine = "GET /path HTTP/1.1\r\n\r\n";
+
+        //when we parse the http request
+        const HttpMessage actual(stringToVector(request));
+        const HttpMessage actualWithNewLine(stringToVector(requestWithNewLine));
+        const HttpMessage actualWithDoubleNewLine(stringToVector(requestWithDoubleNewLine));
+
+        //then we get back the message parsed properly
+        const HttpMessage expected = {HttpMessage::GET,"/path"};
+        EXPECT_EQ(expected, actual);
+        EXPECT_EQ(expected, actualWithNewLine);
+        EXPECT_EQ(expected, actualWithDoubleNewLine);
+    }
+
+    TEST(Constructor, will_parse_an_http_message_with_headers_but_no_body)
+    {
+        //given we have a http message with headers but no body
+        const string request =
+            "POST /test/path HTTP/1.1\r\n"
+            "test: bingo,paddle board, pepperoni\r\n"
+            "test: pickle\r\n"
+            "\r\n";
+        const string requestWithOneNewLine =
+            "POST /test/path HTTP/1.1\r\n"
+            "test: bingo,paddle board, pepperoni\r\n"
+            "test: pickle\r\n";
+        const string requestWithNoNewLines =
+            "POST /test/path HTTP/1.1\r\n"
+            "test: bingo,paddle board, pepperoni\r\n"
+            "test: pickle";
+
+        //when we parse the http request
+        const HttpMessage actual(stringToVector(request));
+        const HttpMessage actualWithOneNewLine = stringToVector(requestWithOneNewLine);
+        const HttpMessage actualWithNoNewLine = stringToVector(requestWithNoNewLines);
+
+        //then we get back the message parsed properly
+        const HttpMessage expected = {HttpMessage::POST, "/test/path",
+            {{"test",{"bingo","paddle board","pepperoni","pickle"}}}};
+        EXPECT_EQ(expected, actual);
+        EXPECT_EQ(expected, actualWithOneNewLine);
+        EXPECT_EQ(expected, actualWithNoNewLine);
+    }
+
+    TEST(Constructor, will_parse_an_http_message_with_no_headers_but_a_body)
+    {
+        //given we have a http request without headers
+        const string request = "POST /an_endpoint HTTP/1.1\r\n\r\nThis is a body";
+
+        //when we parse the http request
+        const HttpMessage actual(stringToVector(request));
+
+        //then we get back the message parsed properly
+        const HttpMessage expected = {HttpMessage::POST,"/an_endpoint",{},"This is a body"};
+        EXPECT_EQ(expected,actual);
+    }
+
+    TEST(Constructor, will_set_http_method_to_error_if_an_unknown_method_is_provided)
+    {
+        //given we have a http request with an unknown method
+        const string request = "UNKNOWN /endpoint HTTP/1.1";
+
+        //when we parse the http request
+        const HttpMessage actual(stringToVector(request));
+
+        //then we get back that the method is an error
+        const HttpMessage expected = {HttpMessage::ERROR,"/endpoint",{},request};
         EXPECT_EQ(expected, actual);
     }
 }

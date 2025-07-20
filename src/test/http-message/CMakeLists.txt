@@ -1,5 +1,7 @@
 add_executable(HttpMessageTests
         Parsing.c++
+        printAsResponse.c++
+        printAsRequest.c++
 )
 
 target_link_libraries(HttpMessageTests

@@ -108,10 +108,10 @@ namespace StiltFox::DialUp
         while (!toParse.empty() && toParse.front() != '\r' && toParse.front() != '\n')
         {
             string key = parseToDelim(toParse, ':');
-            if (toParse.front() == ' ') toParse.pop();
+            if (!toParse.empty() && toParse.front() == ' ') toParse.pop();
             string headerValues = parseToDelim(toParse, '\r');
             parsePotentialMultiValueHeader(headerValues, headers[key]);
-            if (toParse.front() == '\n') toParse.pop();
+            if (!toParse.empty() && toParse.front() == '\n') toParse.pop();
         }
 
         return headers;
@@ -214,6 +214,8 @@ namespace StiltFox::DialUp
             for (const auto& trait: value)
             {
                 string excapedTrait = trait.find(',') != string::npos ? "\"" + trait + "\"" : trait;
+                if (!output.ends_with(": ")) output += ",";
+                output += excapedTrait;
             }
 
             output += "\r\n";

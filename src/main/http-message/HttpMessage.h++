@@ -37,12 +37,31 @@ namespace StiltFox::DialUp
         std::unordered_map<std::string,std::vector<std::string>> headers;
 
         /***************************************************************************************************************
-         * This constructor is used to create an Http Message from an vector of raw bytes. This is useful because things
+         * This constructor is used to create a Http Message from a vector of raw bytes. This is useful because things
          * like websockets typically return raw binary data. This can be used to parse either a request or a response.
+         *
+         * @param data - The data that you would like to parse into a Http Message. The data will not be modified in
+         *               any way by this procedure.
          **************************************************************************************************************/
         HttpMessage(const std::vector<char>& data);
+        /***************************************************************************************************************
+         * This constructor is used to create a Http Response. This will set the Http Method to NONE.
+         *
+         * @param statusCode - A number representing the response status. Ie: 404, 200, ect...
+         * @param headers - A map of headers, each one able to support multiple values. Defaults to an empty map.
+         * @param body - A string representing the body of the message you wish to send. Defaults to an empty string.
+         **************************************************************************************************************/
         HttpMessage(int statusCode, std::unordered_map<std::string,std::vector<std::string>> headers = {},
             std::string body = "");
+        /***************************************************************************************************************
+         * This constructor is used to create a Http Request. This will set the statusCode to zero.
+         *
+         * @param method - The method that our request will be using. Ie: GET, PUT, POST, ect...
+         * @param uri - This is a string that represents the path of the url after the host name. IE: /admin
+         *              defaults to "*".
+         * @param headers - A map of headers, each one able to support multiple values. Defaults to empty map
+         * @param body - ....
+         **************************************************************************************************************/
         HttpMessage(Method method, std::string uri = "*",
             std::unordered_map<std::string,std::vector<std::string>> headers = {}, std::string body = "");
         HttpMessage(const HttpMessage&);
