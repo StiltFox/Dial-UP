@@ -38,7 +38,10 @@ namespace StiltFox::DialUp
          * be called first, before using any other function of this object. If the socket is not open the other
          * functions will return default values.
          *
-         * @param queueSize -
+         * @param queueSize - This is the number of requests for connection that can sit in waiting. Once the socket is
+         *                    full, new connections will be met with an error or ignored depending on the underlying
+         *                    implementation.
+         * @return A boolean value that indicates weather the port was successfully opened or not.
          **************************************************************************************************************/
         bool openPort(int queueSize = 3);
         bool isOpen() const;
