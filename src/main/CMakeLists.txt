@@ -1,3 +1,4 @@
+add_subdirectory(url)
 add_subdirectory(http-message)
 add_subdirectory(server-socket)
 add_subdirectory(endpoint-registry)

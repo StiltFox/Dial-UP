@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
+find_package(StandMixer REQUIRED)
+
 add_subdirectory(src)
 
 configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
