@@ -69,20 +69,22 @@ namespace StiltFox::DialUp
             }
         }
 
-        return output.str;
+        return output.str();
     }
 
-    Url::Url(const vector<string>& pathSegments, const unordered_map<string, string>& parameters)
+    inline void printUrlWithoutParametersToStream(const Url& url, stringstream& output)
     {
-        this->pathSegments = pathSegments;
-        this->parameters = parameters;
+        if (!url.protocol.empty()) output << urlEncode(url.protocol) << "://";
+        if (!url.host.empty()) output << urlEncode(url.host);
+        if (url.port > 0) output << ":" << url.port;
+        for(const string& segment : url.pathSegments) output << '/' << urlEncode(segment);
     }
 
     string Url::toUrl() const
     {
         stringstream url;
 
-        for(const string& segment : pathSegments) url << '/' << urlEncode(segment);
+        printUrlWithoutParametersToStream(*this, url);
 
         if (!parameters.empty())
         {
@@ -103,7 +105,7 @@ namespace StiltFox::DialUp
     {
         stringstream url;
 
-        for(const string& segment : pathSegments) url << '/' << urlEncode(segment);
+        printUrlWithoutParametersToStream(*this, url);
 
         return url.str();
     }
@@ -112,24 +114,36 @@ namespace StiltFox::DialUp
     {
         auto output = make_shared<Url>();
 
-        if (!url.empty())
-        {
-            output->pathSegments = StandMixer::DataProcessor::tokenize(url,"/");
-            const auto queryStartPosition = output->pathSegments.back().find_first_of("?");
-            if (queryStartPosition != string::npos)
-            {
-                string parameters = output->pathSegments.back().substr(queryStartPosition+1);
-                output->pathSegments.back() = output->pathSegments.back().substr(0, queryStartPosition);
-                vector<string> parameterExpressions = StandMixer::DataProcessor::tokenize(parameters, "&");
-
-                for (const auto expression : parameterExpressions)
-                {
-                    vector<string> tokenized = StandMixer::DataProcessor::tokenize(expression, "=");
-                    output->parameters[tokenized[0]] = tokenized[1];
-                }
-            }
-        }
+        // if (!url.empty())
+        // {
+        //     output->pathSegments = StandMixer::DataProcessor::tokenize(url,"/");
+        //     const auto queryStartPosition = output->pathSegments.back().find_first_of("?");
+        //     if (queryStartPosition != string::npos)
+        //     {
+        //         string parameters = output->pathSegments.back().substr(queryStartPosition+1);
+        //         output->pathSegments.back() = output->pathSegments.back().substr(0, queryStartPosition);
+        //         vector<string> parameterExpressions = StandMixer::DataProcessor::tokenize(parameters, "&");
+        //
+        //         for (const auto expression : parameterExpressions)
+        //         {
+        //             vector<string> tokenized = StandMixer::DataProcessor::tokenize(expression, "=");
+        //             output->parameters[tokenized[0]] = tokenized[1];
+        //         }
+        //     }
+        // }
 
         return output;
+    }
+
+    bool Url::operator==(const Url& other) const
+    {
+        return pathSegments == other.pathSegments && parameters == other.parameters && port == other.port &&
+               protocol == other.protocol && host == other.host;
+    }
+
+    bool Url::operator!=(const Url& other) const
+    {
+        return !(pathSegments == other.pathSegments && parameters == other.parameters && port == other.port &&
+               protocol == other.protocol && host == other.host);
     }
 }

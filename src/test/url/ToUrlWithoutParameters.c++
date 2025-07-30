@@ -15,7 +15,7 @@ namespace StiltFox::DialUp::Tests::UrlTests::ToUrlWithoutParameters
     TEST(toUrlWithoutParameters, will_ignore_url_parameters_when_printing_the_url_string)
     {
         //given we have a url with parameters
-        const Url urlWithParameters({"path"},{{"param","test"},{"param1","test1"},{"param2","param2"}});
+        const Url urlWithParameters("","",-1,{"path"},{{"param","test"},{"param1","test1"},{"param2","param2"}});
 
         //when we get the url string without parameters
         auto actual = urlWithParameters.toUrlWithoutParameters();
@@ -27,7 +27,7 @@ namespace StiltFox::DialUp::Tests::UrlTests::ToUrlWithoutParameters
     TEST(toUrlWithoutParameters, will_url_encode_invalid_characters_into_url_percent_encodings)
     {
         //given we have a url path that needs encoded
-        const Url urlThatNeedsEncoded({"/aq*()$?!@#$%^&_-+=","水をください"});
+        const Url urlThatNeedsEncoded("","",-1,{"/aq*()$?!@#$%^&_-+=","水をください"},{});
 
         //when we get the url string without parameters
         auto actual = urlThatNeedsEncoded.toUrlWithoutParameters();

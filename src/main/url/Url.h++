@@ -16,11 +16,10 @@ namespace StiltFox::DialUp
 {
     struct Url
     {
+        std::string protocol,host;
+        int port;
         std::vector<std::string> pathSegments;
         std::unordered_map<std::string, std::string> parameters;
-
-        Url(const std::vector<std::string>& pathSegments={},
-            const std::unordered_map<std::string, std::string>& parameters={});
 
         std::string toUrl() const;
         std::string toUrlWithoutParameters() const;

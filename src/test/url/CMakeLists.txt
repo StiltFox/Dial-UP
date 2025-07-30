@@ -1,6 +1,7 @@
 add_executable(UrlTests
         ToUrlTests.c++
         ToUrlWithoutParameters.c++
+        parseTests.c++
 )
 
 target_link_libraries(UrlTests

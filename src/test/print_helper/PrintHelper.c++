@@ -30,4 +30,17 @@ namespace StiltFox::DialUp
 
         *outputStream << output.dump(4) << endl;
     }
+
+    void PrintTo(const Url& url, std::ostream* outputStream)
+    {
+        json output;
+        output["protocol"] = url.protocol;
+        output["host"] = url.host;
+        output["port"] = url.port;
+        output["path-segments"] = url.pathSegments;
+        output["parameters"] = url.parameters;
+
+        *outputStream << output.dump(4) << endl;
+    }
+
 }
