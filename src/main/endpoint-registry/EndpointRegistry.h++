@@ -7,6 +7,7 @@
 ********************************************************/
 #ifndef Stilt_Fox_21e63198d1504c67a2a82a4ad7a0d29c
 #define Stilt_Fox_21e63198d1504c67a2a82a4ad7a0d29c
+#include <memory>
 #include <functional>
 #include <unordered_set>
 #include "HttpMessage.h++"
@@ -28,8 +29,17 @@ namespace StiltFox::DialUp
      ******************************************************************************************************************/
     class EndpointRegistry
     {
-        std::unordered_map<std::string, std::unordered_map<HttpMessage::Method, Endpoint>> endpoints;
+        struct TreeNode
+        {
+            TreeNode* parent = nullptr;
+            std::unordered_map<std::string, TreeNode> children;
+            std::unordered_map<HttpMessage::Method, Endpoint> endpoints;
+        };
 
+        TreeNode root;
+
+        void processNode(Url currentPath, const TreeNode& currentNode,
+                         std::unordered_map<std::string,std::unordered_set<HttpMessage::Method>>& nodeMap) const;
     public:
         /**************************************************************************************************************
          * Adds an endpoint to the registry so that it can be routed to. If you want a function to handle more than one
@@ -44,6 +54,7 @@ namespace StiltFox::DialUp
          * @param endpoint - The function that handles the request.
          *************************************************************************************************************/
         void registerEndpoint(const std::string& url, const HttpMessage::Method& method, const Endpoint& endpoint);
+        void registerEndpoint(const Url& url, const HttpMessage::Method& method, const Endpoint& endpoint);
         /***************************************************************************************************************
          * This method will remove a function from the registry and it will no longer be processed. No memory will be
          * deleted, so if you passed anything that requires deallocation do it yourself.
@@ -55,6 +66,7 @@ namespace StiltFox::DialUp
          *                 remove your POST handler.
          **************************************************************************************************************/
         void unregisterEndpoint(const std::string& url, const HttpMessage::Method& method);
+        void unregisterEndpoint(const Url& url, const HttpMessage::Method& method);
 
         /***************************************************************************************************************
          * This method will return a map of all endpoints an each method they support. While we'd love to provide the

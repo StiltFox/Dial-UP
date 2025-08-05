@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include "Url.h++"
 
 namespace StiltFox::DialUp
 {
@@ -33,7 +34,8 @@ namespace StiltFox::DialUp
         enum Method {GET,HEAD,POST,PUT,PATCH,DELETE,CONNECT,OPTIONS,TRACE,ERROR,NONE};
         int statusCode = 0;
         Method httpMethod = NONE;
-        std::string httpVersion, requestUri, body;
+        Url requestUri;
+        std::string httpVersion, body;
         std::unordered_map<std::string,std::vector<std::string>> headers;
 
         /***************************************************************************************************************
@@ -58,11 +60,11 @@ namespace StiltFox::DialUp
          *
          * @param method - The method that our request will be using. Ie: GET, PUT, POST, ect...
          * @param uri - This is a string that represents the path of the url after the host name. IE: /admin
-         *              defaults to "*".
+         *              defaults to "/".
          * @param headers - A map of headers, each one able to support multiple values. Defaults to empty map
          * @param body - A string representing the body of the message you wish to send. Defaults to an empty string.
          **************************************************************************************************************/
-        HttpMessage(Method method, std::string uri = "*",
+        HttpMessage(Method method, std::string uri = "/",
             std::unordered_map<std::string,std::vector<std::string>> headers = {}, std::string body = "");
         /***************************************************************************************************************
          * This constructor creates a deep copy of the message passed in.

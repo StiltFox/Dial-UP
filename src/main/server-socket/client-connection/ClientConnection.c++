@@ -22,18 +22,6 @@ namespace StiltFox::DialUp
 {
     mutex readLock;
 
-    inline void trimWhitespaceFromStartOfMessage(vector<char>& rawData)
-    {
-        queue dataQueue(deque(rawData.begin(), rawData.end()));
-        while (!dataQueue.empty() && (isspace(dataQueue.front()) || iscntrl(dataQueue.front()))) dataQueue.pop();
-        rawData.clear();
-        while (!dataQueue.empty())
-        {
-            rawData.emplace_back(dataQueue.front());
-            dataQueue.pop();
-        }
-    }
-
     ClientConnection::ClientConnection(int socketHandle, sockaddr_in address, long maxWaitTimeMs, long maxDataSizeBytes)
     {
         this->socketHandle = socketHandle;
@@ -66,11 +54,10 @@ namespace StiltFox::DialUp
             for (int y=0; y < 1024; y++)
             {
                 lock_guard guard(readLock);
+                if (buffer[y]=='\000') break;
                 rawData.data.emplace_back(buffer[y]);
             }
         } while ((buffer[1024 -1] != '\000') && !holt);
-
-        trimWhitespaceFromStartOfMessage(rawData.data);
 
         lock_guard guard(readLock);
         holt = true;

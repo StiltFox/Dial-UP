@@ -9,7 +9,6 @@
 #define Stilt_Fox_6fed102348ef4c75aa4e588e1d241356
 #include <string>
 #include <vector>
-#include <memory>
 #include <unordered_map>
 
 namespace StiltFox::DialUp
@@ -21,9 +20,12 @@ namespace StiltFox::DialUp
         std::vector<std::string> pathSegments;
         std::unordered_map<std::string, std::string> parameters;
 
+        Url(std::string protocol = "", std::string host = "", int port = -1, std::vector<std::string> pathSegments = {},
+            std::unordered_map<std::string, std::string> parameters = {});
+
         std::string toUrl() const;
         std::string toUrlWithoutParameters() const;
-        static std::shared_ptr<Url> parse(const std::string& url) ;
+        static Url parse(const std::string& url);
 
         bool operator==(const Url& other) const;
         bool operator!=(const Url& other) const;

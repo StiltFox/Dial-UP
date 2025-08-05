@@ -88,7 +88,7 @@ namespace StiltFox::DialUp::Tests::HttpMessageTests::PrintAsRequest
 
         //then we get back a well formatted response
         const string expected =
-            "DELETE * HTTP/1.1\r\n\r\n";
+            "DELETE / HTTP/1.1\r\n\r\n";
         EXPECT_EQ(expected,actual);
     }
 }

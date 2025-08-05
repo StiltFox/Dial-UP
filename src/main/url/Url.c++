@@ -8,9 +8,12 @@
 #include <sstream>
 #include <iomanip>
 #include <Stilt_Fox/StandMixer/DataProcessor.h++>
+#include <Stilt_Fox/StandMixer/DataConverter.h++>
+#include <utility>
 #include "Url.h++"
 
 using namespace std;
+using namespace StiltFox::StandMixer;
 
 namespace StiltFox::DialUp
 {
@@ -39,33 +42,22 @@ namespace StiltFox::DialUp
     inline string urlDecode(const string& str)
     {
         stringstream output;
-        stringstream hex;
-        char percentMode = -1;
+        auto tokens = DataProcessor::tokenize(str, "%");
 
-        for (const unsigned char character : str)
+        if (!str.starts_with('%')) output << tokens[0];
+        tokens.erase(tokens.begin());
+
+        for (const auto& token : tokens)
         {
-            if (percentMode == -1)
+            if (token.size() >= 2)
             {
-                if (character == '%')
-                {
-                    percentMode = 0;
-                }
-                else
-                {
-                    output << character;
-                }
+                auto decodedData = DataConverter::convertHexStringToData(token.substr(0, 2));
+                for (const auto& character : decodedData) output << character;
+                output << token.substr(2);
             }
             else
             {
-                percentMode++;
-                hex << character;
-
-                if (percentMode == 2)
-                {
-                    percentMode = -1;
-                    char decoded = stoi(hex.str(), nullptr, 16);
-                    output << decoded;
-                }
+                output << "%" << token;
             }
         }
 
@@ -74,10 +66,28 @@ namespace StiltFox::DialUp
 
     inline void printUrlWithoutParametersToStream(const Url& url, stringstream& output)
     {
-        if (!url.protocol.empty()) output << urlEncode(url.protocol) << "://";
-        if (!url.host.empty()) output << urlEncode(url.host);
-        if (url.port > 0) output << ":" << url.port;
+        if (!url.host.empty())
+        {
+            if (!url.protocol.empty()) output << urlEncode(url.protocol) << "://";
+            output << urlEncode(url.host);
+            if (url.port > 0) output << ":" << url.port;
+        }
+        else if (url.pathSegments.empty())
+        {
+            output << "/";
+        }
+
         for(const string& segment : url.pathSegments) output << '/' << urlEncode(segment);
+    }
+
+    Url::Url(std::string protocol, std::string host, int port, std::vector<std::string> pathSegments,
+        std::unordered_map<std::string, std::string> parameters)
+    {
+        this->protocol = move(protocol);
+        this->host = move(host);
+        this->port = port;
+        this->pathSegments = move(pathSegments);
+        this->parameters = move(parameters);
     }
 
     string Url::toUrl() const
@@ -90,9 +100,7 @@ namespace StiltFox::DialUp
         {
             url << '?';
             for (const auto& parameter : parameters)
-            {
                 url << urlEncode(parameter.first) << "=" << urlEncode(parameter.second) << '&';
-            }
         }
 
         string cleanedUrl = url.str();
@@ -110,27 +118,43 @@ namespace StiltFox::DialUp
         return url.str();
     }
 
-    shared_ptr<Url> Url::parse(const string& url)
+    Url Url::parse(const string& url)
     {
-        auto output = make_shared<Url>();
+        Url output;
 
-        // if (!url.empty())
-        // {
-        //     output->pathSegments = StandMixer::DataProcessor::tokenize(url,"/");
-        //     const auto queryStartPosition = output->pathSegments.back().find_first_of("?");
-        //     if (queryStartPosition != string::npos)
-        //     {
-        //         string parameters = output->pathSegments.back().substr(queryStartPosition+1);
-        //         output->pathSegments.back() = output->pathSegments.back().substr(0, queryStartPosition);
-        //         vector<string> parameterExpressions = StandMixer::DataProcessor::tokenize(parameters, "&");
-        //
-        //         for (const auto expression : parameterExpressions)
-        //         {
-        //             vector<string> tokenized = StandMixer::DataProcessor::tokenize(expression, "=");
-        //             output->parameters[tokenized[0]] = tokenized[1];
-        //         }
-        //     }
-        // }
+        if (!url.empty())
+        {
+            queue data(deque(url.begin(), url.end()));
+
+            if (url.find("://") != string::npos)
+                output.protocol = DataProcessor::parseToDelimiter(data, "://");
+            const auto hostInformation = DataProcessor::tokenize(DataProcessor::parseToDelimiter(data,"/"),":");
+
+            if (!hostInformation.empty())
+            {
+                output.host = hostInformation[0];
+                try
+                {
+                   if (hostInformation.size() > 1) output.port = stoi(hostInformation[1]);
+                }
+                catch (...)
+                {
+                    output.port = -2;
+                }
+            }
+
+            output.pathSegments = DataProcessor::tokenize(DataProcessor::parseToDelimiter(data, "?"), "/");
+            for (auto& segment : output.pathSegments) segment = urlDecode(segment);
+            if (!data.empty())
+            {
+                vector<string> parameterExpressions = DataProcessor::tokenize(data, "&");
+                for (const auto& expression : parameterExpressions)
+                {
+                    vector<string> tokenized = DataProcessor::tokenize(expression, "=");
+                    output.parameters[urlDecode(tokenized[0])] = urlDecode(tokenized[1]);
+                }
+            }
+        }
 
         return output;
     }
@@ -145,5 +169,15 @@ namespace StiltFox::DialUp
     {
         return !(pathSegments == other.pathSegments && parameters == other.parameters && port == other.port &&
                protocol == other.protocol && host == other.host);
+    }
+
+    bool Url::operator==(const string& other) const
+    {
+        return parse(other) == *this;
+    }
+
+    bool Url::operator!=(const string& other) const
+    {
+        return *this != parse(other);
     }
 }

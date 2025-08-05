@@ -7,11 +7,12 @@
 ********************************************************/
 #include <queue>
 #include <cctype>
+#include <locale>
+#include <Stilt_Fox/StandMixer/DataProcessor.h++>
 #include "HttpMessage.h++"
 
-#include <locale>
-
 using namespace std;
+using namespace StiltFox::StandMixer;
 
 namespace StiltFox::DialUp
 {
@@ -64,25 +65,6 @@ namespace StiltFox::DialUp
         return stringMethods.contains(method) ? stringMethods[method] : HttpMessage::Method::ERROR;
     }
 
-    inline string parseToDelim(queue<char>& toParse, char delim, char backupDelim)
-    {
-        string output;
-
-        while (!toParse.empty() && toParse.front() != delim && toParse.front() != backupDelim)
-        {
-            output += toParse.front();
-            toParse.pop();
-        }
-        if (!toParse.empty()) toParse.pop();
-
-        return output;
-    }
-
-    inline string parseToDelim(queue<char>& toParse, char delim)
-    {
-        return parseToDelim(toParse, delim, '\000');
-    }
-
     inline void trimLeadingSpaces(queue<char>& toParse)
     {
         while (!toParse.empty() && isspace(toParse.front())) toParse.pop();
@@ -94,7 +76,7 @@ namespace StiltFox::DialUp
 
         while (!toParse.empty())
         {
-            output.push_back(parseToDelim(toParse, ',', '\0'));
+            output.push_back(DataProcessor::parseToDelimiter(toParse, ","));
             if (!toParse.empty() && toParse.front() == ' ') toParse.pop();
         }
 
@@ -107,51 +89,47 @@ namespace StiltFox::DialUp
 
         while (!toParse.empty() && toParse.front() != '\r' && toParse.front() != '\n')
         {
-            string key = parseToDelim(toParse, ':');
+            string key = DataProcessor::parseToDelimiter(toParse, ":");
             if (!toParse.empty() && toParse.front() == ' ') toParse.pop();
-            string headerValues = parseToDelim(toParse, '\r');
+            string headerValues = DataProcessor::parseToDelimiter(toParse, "\r\n");
             parsePotentialMultiValueHeader(headerValues, headers[key]);
-            if (!toParse.empty() && toParse.front() == '\n') toParse.pop();
         }
 
         return headers;
     }
 
-    inline queue<char> getLine(queue<char>& toParse)
-    {
-        trimLeadingSpaces(toParse);
-        string outputLine = parseToDelim(toParse, '\r', '\n');
-        if (!toParse.empty() && toParse.front() == '\n') toParse.pop();
-
-        return queue(deque(outputLine.begin(), outputLine.end()));
-    }
-
-    inline void parseFirstLine(HttpMessage* toWriteTo, queue<char>& toParse)
+    inline void parseFirstLine(HttpMessage* toWriteTo, const string& toParse)
     {
         if (toWriteTo != nullptr)
         {
-            string token = parseToDelim(toParse, ' ');
+            vector<string> tokens = DataProcessor::tokenize(toParse);
 
-            if (token.starts_with("HTTP"))
+            if (tokens.size() == 3)
             {
-                toWriteTo->httpVersion = token;
-                token = parseToDelim(toParse, ' ');
-
-                try
+                if (tokens[0].starts_with("HTTP"))
                 {
-                    toWriteTo->statusCode = stoi(token);
+                    toWriteTo->httpVersion = tokens[0];
+                    try
+                    {
+                        toWriteTo->statusCode = stoi(tokens[1]);
+                    }
+                    catch(...)
+                    {
+                        toWriteTo->statusCode = 0;
+                        toWriteTo->httpMethod = HttpMessage::Method::ERROR;
+                    }
+                    //ignore the rest, status reason is not needed.
                 }
-                catch(...)
+                else
                 {
-                    toWriteTo->statusCode = 0;
+                    toWriteTo->httpMethod = getMethodFromString(tokens[0]);
+                    toWriteTo->requestUri = Url::parse(tokens[1]);
+                    toWriteTo->httpVersion = tokens[2];
                 }
-                //ignore the rest, status reason is not needed.
             }
             else
             {
-                toWriteTo->httpMethod = getMethodFromString(token);
-                toWriteTo->requestUri = parseToDelim(toParse, ' ');
-                toWriteTo->httpVersion = parseToDelim(toParse, ' ');
+                toWriteTo->httpMethod = HttpMessage::Method::ERROR;
             }
         }
     }
@@ -170,7 +148,7 @@ namespace StiltFox::DialUp
         statusCode = 0;
         httpMethod = method;
         httpVersion = "HTTP/1.1";
-        requestUri = move(uri);
+        requestUri = Url::parse(uri);
         headers = move(head);
         body = move(bod);
     }
@@ -193,13 +171,27 @@ namespace StiltFox::DialUp
     void HttpMessage::parse(const std::vector<char>& request)
     {
         queue parsingBuffer(deque(request.begin(), request.end()));
-        queue<char> firstLine = getLine(parsingBuffer);
+        trimLeadingSpaces(parsingBuffer);
+        string firstLine = DataProcessor::parseToDelimiter(parsingBuffer, "\r\n");
 
         parseFirstLine(this, firstLine);
         headers = parseHeaders(parsingBuffer);
 
-        if (!parsingBuffer.empty() && parsingBuffer.front() == '\r') parseToDelim(parsingBuffer, '\n');
-        body = httpMethod == ERROR ? string(request.begin(), request.end()) : parseToDelim(parsingBuffer, '\000');
+        if (!parsingBuffer.empty() && parsingBuffer.front() == '\r')
+            DataProcessor::parseToDelimiter(parsingBuffer, "\r\n");
+
+        if (httpMethod == ERROR)
+        {
+            body = string(request.begin(), request.end());
+        }
+        else
+        {
+            while (!parsingBuffer.empty())
+            {
+                body += parsingBuffer.front();
+                parsingBuffer.pop();
+            }
+        }
     }
 
     string HttpMessage::printBodyAndHeaders() const
@@ -232,7 +224,7 @@ namespace StiltFox::DialUp
 
     string HttpMessage::printAsRequest() const
     {
-        return getStringMethod(httpMethod) + " " + requestUri + " " + httpVersion + "\r\n" + printBodyAndHeaders();
+        return getStringMethod(httpMethod) + " " + requestUri.toUrl() + " " + httpVersion + "\r\n" + printBodyAndHeaders();
     }
 
     string HttpMessage::getHttpMethodAsString() const

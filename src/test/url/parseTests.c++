@@ -24,7 +24,7 @@ namespace StiltFox::DialUp::Tests::Parse
         //then we get back the parsed url
         Url expected = {"", "", -1, {"fox","foo","bar","baz"},
                      {{"pickles","potatoe"},{"eyes","orange"}}};
-        EXPECT_EQ(expected, *actual);
+        EXPECT_EQ(expected, actual);
     }
 
     TEST(parse, will_parse_the_url_path_of_a_well_formed_path_without_parameters)
@@ -37,7 +37,7 @@ namespace StiltFox::DialUp::Tests::Parse
 
         //then we get back the parsed url
         const Url expected = {"", "", -1, {"fox","foo","bar","baz"},{}};
-        EXPECT_EQ(expected, *actual);
+        EXPECT_EQ(expected, actual);
     }
 
     TEST(parse, will_parse_a_full_url_with_host_protocol_and_port_without_a_path)
@@ -50,7 +50,7 @@ namespace StiltFox::DialUp::Tests::Parse
 
         //then we get back the parsed url
         const Url expected = {"http","example.com",8080, {},{}};
-        EXPECT_EQ(expected, *actual);
+        EXPECT_EQ(expected, actual);
     }
 
     TEST (parse, will_parse_a_full_url_without_a_port_number_or_path)
@@ -63,7 +63,7 @@ namespace StiltFox::DialUp::Tests::Parse
 
         //then we get back the parsed url
         const Url expected = {"http","example.com",-1, {},{}};
-        EXPECT_EQ(expected, *actual);
+        EXPECT_EQ(expected, actual);
     }
 
     TEST (parse, will_parse_a_url_with_only_a_host)
@@ -76,7 +76,7 @@ namespace StiltFox::DialUp::Tests::Parse
 
         //then we get back the parsed url
         const Url expected = {"","example.com",-1, {},{}};
-        EXPECT_EQ(expected, *actual);
+        EXPECT_EQ(expected, actual);
     }
 
     TEST(parse, will_parse_a_full_url_with_a_path)
@@ -89,7 +89,7 @@ namespace StiltFox::DialUp::Tests::Parse
 
         //then we get back the parsed url
         const Url expected = {"http","example.com",8080, {"food","order"},{}};
-        EXPECT_EQ(expected, *actual);
+        EXPECT_EQ(expected, actual);
     }
 
     TEST(parse, will_parse_a_full_url_with_a_path_and_query_parameters)
@@ -102,7 +102,7 @@ namespace StiltFox::DialUp::Tests::Parse
 
         //then we get back the parsed url
         const Url expected = {"http","example.com",8080,{"food","order"},{{"user","billybob"}}};
-        EXPECT_EQ(expected, *actual);
+        EXPECT_EQ(expected, actual);
     }
 
     TEST(parse, will_parse_a_url_with_encoded_characters)
@@ -117,33 +117,32 @@ namespace StiltFox::DialUp::Tests::Parse
         //then we get back the parsed url
         const Url expected = {"http","example.com",443,{"i have spaces"},
                              {{"/aq*()$?!@#$%^&_-+=","水をください"}}};
-        EXPECT_EQ(expected, *actual);
+        EXPECT_EQ(expected, actual);
     }
 
-    TEST(parse, will_return_a_null_pointer_when_parsing_an_invalid_hostname)
+    TEST(parse, will_return_a_port_number_of_negative_two_when_parsing_a_port_number_that_cannot_be_parsed)
     {
-        //given we have a url with an invalid hostname
-        const string urlString = "http://exa mp*(e.com";
-        const string urlStringExcaped = "http://exa%20mple.com";
-
-        //when we parse the urls
-        const auto actual = Url::parse(urlString);
-        const auto actualExcaped = Url::parse(urlStringExcaped);
-
-        //then we get back null pointers
-        EXPECT_EQ(nullptr, actual);
-        EXPECT_EQ(nullptr, actualExcaped);
-    }
-
-    TEST(parse, will_return_a_null_pointer_when_parsing_an_invalid_protocol)
-    {
-        //given we have a url with a protocol that has invalid characters
-        const string invalidProtocol = "ht-1%20p://example.com";
+        //given we have a url with a non-numeric port number
+        const string urlString = "http://example.com:pickle";
 
         //when we parse the url
-        const auto actual = Url::parse(invalidProtocol);
+        const auto actual = Url::parse(urlString);
+
+        //then we get back a port number of -2
+        const Url expected = {"http","example.com",-2};
+        EXPECT_EQ(expected, actual);
+    }
+
+    TEST(parse, will_return_an_empty_object_if_we_parse_an_empty_string)
+    {
+        //given we have an empty url string
+        const string emptyString;
+
+        //when we parse the url
+        const auto actual = Url::parse(emptyString);
 
         //then we get back a null pointer
-        EXPECT_EQ(nullptr, actual);
+        const Url expected = {};
+        EXPECT_EQ(expected, actual);
     }
 }

@@ -6,7 +6,7 @@
 * of use.
 ********************************************************/
 #include "EndpointRegistry.h++"
-
+#include <stack>
 #include <ranges>
 
 using namespace std;
@@ -17,15 +17,83 @@ namespace StiltFox::DialUp
             const string& url, const HttpMessage::Method& method, const Endpoint& endpoint
         )
     {
-        endpoints[url][method] = endpoint;
+        registerEndpoint(Url::parse(url), method, endpoint);
+    }
+
+    void EndpointRegistry::registerEndpoint(const Url& url, const HttpMessage::Method& method, const Endpoint& endpoint)
+    {
+        TreeNode* currentNode = &root;
+
+        for (const auto& segment : url.pathSegments)
+        {
+            if (!currentNode->children.contains(segment)) currentNode->children[segment];
+            currentNode = &currentNode->children[segment];
+        }
+
+        currentNode->endpoints[method] = endpoint;
     }
 
     void EndpointRegistry::unregisterEndpoint(const string& url, const HttpMessage::Method& method)
     {
-        if (endpoints.contains(url) && endpoints[url].contains(method))
+        unregisterEndpoint(Url::parse(url), method);
+    }
+
+    void EndpointRegistry::unregisterEndpoint(const Url& url, const HttpMessage::Method& method)
+    {
+        bool endpointFound = true;
+        TreeNode* currentNode = &root;
+        stack<string> segmentStack;
+
+        for (const auto& segment : url.pathSegments)
         {
-            endpoints[url].erase(method);
-            if (endpoints[url].empty()) endpoints.erase(url);
+            if (currentNode->children.contains(segment))
+            {
+                currentNode = &currentNode->children[segment];
+                segmentStack.push(segment);
+            }
+            else
+            {
+                endpointFound = false;
+                break;
+            }
+        }
+
+        currentNode->endpoints.erase(method);
+
+        if (endpointFound)
+        {
+            while (!segmentStack.empty() && currentNode->parent != nullptr)
+            {
+                if (currentNode->children.empty() && currentNode->endpoints.empty())
+                {
+                    currentNode->parent->children.erase(segmentStack.top());
+                    segmentStack.pop();
+                    currentNode = currentNode->parent;
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    void EndpointRegistry::processNode(Url currentPath, const TreeNode& currentNode,
+                                       unordered_map<string, unordered_set<HttpMessage::Method>>& nodeMap) const
+    {
+        if (!currentNode.endpoints.empty())
+        {
+            for (const auto& endpoint : currentNode.endpoints) nodeMap[currentPath.toUrl()].insert(endpoint.first);
+        }
+
+        if (!currentNode.children.empty())
+        {
+            for (const auto& child : currentNode.children)
+            {
+                Url childPath = currentPath;
+                childPath.pathSegments.push_back(child.first);
+                processNode(childPath, child.second, nodeMap);
+            }
         }
     }
 
@@ -33,8 +101,8 @@ namespace StiltFox::DialUp
     {
         unordered_map<string, unordered_set<HttpMessage::Method>> output;
 
-        for (const auto& url : endpoints)
-            for (const auto &method: url.second | views::keys) output[url.first].emplace(method);
+        Url startUrl;
+        processNode(startUrl, root, output);
 
         return output;
     }
@@ -43,11 +111,29 @@ namespace StiltFox::DialUp
     {
         HttpMessage output = {404,{},""};
 
-        if (endpoints.contains(message.requestUri))
+        TreeNode* currentNode = &root;
+        for (const auto& segment : message.requestUri.pathSegments)
         {
-            if (endpoints[message.requestUri].contains(message.httpMethod))
+            if (currentNode->children.contains(segment))
             {
-                output = endpoints[message.requestUri][message.httpMethod](message);
+                currentNode = &currentNode->children[segment];
+            }
+            else if (currentNode->children.contains("*"))
+            {
+                currentNode = &currentNode->children["*"];
+            }
+            else
+            {
+                currentNode = nullptr;
+                break;
+            }
+        }
+
+        if (currentNode != nullptr)
+        {
+            if (currentNode->endpoints.contains(message.httpMethod))
+            {
+                output = currentNode->endpoints[message.httpMethod](message);
             }
             else
             {
