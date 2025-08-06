@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 #include <curl/curl.h>
 #include "PrintHelper.h++"
+#include "ClientConnection.h++"
 #include "ServerSocket.h++"
 
 using namespace std;

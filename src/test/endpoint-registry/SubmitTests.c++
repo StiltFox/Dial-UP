@@ -64,4 +64,48 @@ namespace StiltFox::DialUp::Tests::EndpointRegistryTests::Submit
         const HttpMessage expected = {200,{},"Message received:\r\n\r\nGET /multi-method-endpoint HTTP/1.1\r\n\r\n"};
         EXPECT_EQ(actual,expected);
     }
+
+    TEST(submitMessage, will_send_a_message_to_a_wildcard_if_no_other_pathing_options_are_available)
+    {
+        //given we have a url registered with a wildcard
+        EndpointRegistry registry;
+        const Endpoint methodFunction =[](HttpMessage message)
+        {
+            return HttpMessage{200,{}, message.requestUri.toUrl() + " endpoint reached"};
+        };
+        registry.registerEndpoint("/record-id/*/stats", HttpMessage::Method::GET, methodFunction);
+
+        //when we send a request to the url with the star filled in with an actual value
+        const auto actual = registry.submitMessage(HttpMessage{HttpMessage::GET,"/record-id/123/stats",{},""});
+
+        //then we get back the expected response
+        const HttpMessage expected = {200,{},"/record-id/123/stats endpoint reached"};
+        EXPECT_EQ(actual, expected);
+    }
+
+    TEST(submitMessage, will_prioritize_defined_paths_over_wildcard_paths)
+    {
+        //given we have a url registered with a wildcard, and one in the same path without a wildcard
+        EndpointRegistry registry;
+        const Endpoint methodFunction =[](HttpMessage message)
+        {
+            return HttpMessage{200,{}, message.requestUri.toUrl() + " endpoint reached"};
+        };
+        registry.registerEndpoint("/record-id/*/stats",HttpMessage::Method::GET,registeredEndpoint);
+        registry.registerEndpoint("/record-id/pickle/stats",HttpMessage::Method::GET,methodFunction);
+
+        //when we send a request to the defined url, and an undefiend one
+        const HttpMessage actual[2] =
+        {
+            registry.submitMessage(HttpMessage{HttpMessage::Method::GET,"/record-id/pickle/stats",{},""}),
+            registry.submitMessage(HttpMessage{HttpMessage::Method::GET,"/record-id/123/stats",{},""})
+        };
+
+        //then we get back the expected responses
+        const HttpMessage expected[2] =
+        {
+            {200,{},"/record-id/pickle/stats endpoint reached"},
+            {200,{},"Message received:\r\n\r\nGET /record-id/123/stats HTTP/1.1\r\n\r\n"}
+        };
+    }
 }

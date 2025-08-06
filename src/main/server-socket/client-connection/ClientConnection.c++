@@ -22,6 +22,15 @@ namespace StiltFox::DialUp
 {
     mutex readLock;
 
+    ClientConnection::ClientConnection(const ServerSocket &serverSocket, long maxWaitTimeMs, long maxDataSizeBytes)
+    {
+        socketHandle = serverSocket.getHandle();
+        address = serverSocket.getAddress();
+        this->maxWaitTimeMs = maxWaitTimeMs;
+        this->maxDataSizeBytes = maxDataSizeBytes;
+        handle = -1;
+    }
+
     ClientConnection::ClientConnection(int socketHandle, sockaddr_in address, long maxWaitTimeMs, long maxDataSizeBytes)
     {
         this->socketHandle = socketHandle;

@@ -90,7 +90,7 @@ namespace StiltFox::DialUp
          * This method will print the Http Message as an Http Request. This will ignore any data that's only relevant
          * to a response. So let's say you have something like the status code set. This data will be ignored.
          *
-         * @return returns teh string representation of the data as an Http Request. Ignores all unnecessary data.
+         * @return returns the string representation of the data as an Http Request. Ignores all unnecessary data.
          **************************************************************************************************************/
         std::string printAsRequest() const;
         /***************************************************************************************************************

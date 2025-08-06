@@ -22,12 +22,12 @@ namespace StiltFox::DialUp
 
     void EndpointRegistry::registerEndpoint(const Url& url, const HttpMessage::Method& method, const Endpoint& endpoint)
     {
-        TreeNode* currentNode = &root;
+        shared_ptr<TreeNode> currentNode = root;
 
         for (const auto& segment : url.pathSegments)
         {
-            if (!currentNode->children.contains(segment)) currentNode->children[segment];
-            currentNode = &currentNode->children[segment];
+            if (!currentNode->children.contains(segment)) currentNode->children[segment] = make_shared<TreeNode>();
+            currentNode = currentNode->children[segment];
         }
 
         currentNode->endpoints[method] = endpoint;
@@ -41,14 +41,14 @@ namespace StiltFox::DialUp
     void EndpointRegistry::unregisterEndpoint(const Url& url, const HttpMessage::Method& method)
     {
         bool endpointFound = true;
-        TreeNode* currentNode = &root;
+        shared_ptr<TreeNode> currentNode = root;
         stack<string> segmentStack;
 
         for (const auto& segment : url.pathSegments)
         {
             if (currentNode->children.contains(segment))
             {
-                currentNode = &currentNode->children[segment];
+                currentNode = currentNode->children[segment];
                 segmentStack.push(segment);
             }
             else
@@ -92,7 +92,7 @@ namespace StiltFox::DialUp
             {
                 Url childPath = currentPath;
                 childPath.pathSegments.push_back(child.first);
-                processNode(childPath, child.second, nodeMap);
+                processNode(childPath, *child.second, nodeMap);
             }
         }
     }
@@ -102,25 +102,25 @@ namespace StiltFox::DialUp
         unordered_map<string, unordered_set<HttpMessage::Method>> output;
 
         Url startUrl;
-        processNode(startUrl, root, output);
+        processNode(startUrl, *root, output);
 
         return output;
     }
 
-    HttpMessage EndpointRegistry::submitMessage(const HttpMessage& message)
+    HttpMessage EndpointRegistry::submitMessage(const HttpMessage& message) const
     {
         HttpMessage output = {404,{},""};
 
-        TreeNode* currentNode = &root;
+        shared_ptr<TreeNode> currentNode = root;
         for (const auto& segment : message.requestUri.pathSegments)
         {
             if (currentNode->children.contains(segment))
             {
-                currentNode = &currentNode->children[segment];
+                currentNode = currentNode->children[segment];
             }
             else if (currentNode->children.contains("*"))
             {
-                currentNode = &currentNode->children["*"];
+                currentNode = currentNode->children["*"];
             }
             else
             {

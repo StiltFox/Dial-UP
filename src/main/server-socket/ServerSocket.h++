@@ -7,9 +7,7 @@
 ********************************************************/
 #ifndef Stilt_Fox_4329fc21886c468c894897102aaa54e6
 #define Stilt_Fox_4329fc21886c468c894897102aaa54e6
-#include <memory>
 #include <netinet/in.h>
-#include "ClientConnection.h++"
 
 namespace StiltFox::DialUp
 {
@@ -44,12 +42,39 @@ namespace StiltFox::DialUp
          * @return A boolean value that indicates weather the port was successfully opened or not.
          **************************************************************************************************************/
         bool openPort(int queueSize = 3);
+        /***************************************************************************************************************
+         * This function returns weather the socket pointed to by this object is open and listening.
+         *
+         * @return A boolean value that indicates weather or not this socket is ready to receive data.
+         **************************************************************************************************************/
         bool isOpen() const;
+        /***************************************************************************************************************
+         * Gets the handle/file descriptor of the socket that's currently running. This is necessary to call various
+         * networking functions. You will typically not need to use this, however it's used internally in other classes
+         * that consume this object.
+         *
+         * @return An integer representation of the socket handle id/file descriptor if the socket is open and
+         *         listening. This will return -1 if the socket is not open for some reason.
+         **************************************************************************************************************/
         int getHandle() const;
+        /***************************************************************************************************************
+         * This function gets an object that contains information that was used, or will be used to open the port with
+         * the underlying operating system. This is here for inspection mostly, however other classes that consume this
+         * may use this information to listen to this socket.
+         *
+         * @return A struct with address information for the port.
+         **************************************************************************************************************/
         sockaddr_in getAddress() const;
+        /***************************************************************************************************************
+         * This function closes the socket entirely. All currently listening connections will be terminated. Use this
+         * to shutdown the network activity. Closing an already closed port produces no adverse side effects as this
+         * function does the proper checks.
+         **************************************************************************************************************/
         void closePort();
-        std::shared_ptr<ClientConnection> createClientConnection();
 
+        /***************************************************************************************************************
+         * This deconstructor closes the socket upon leaving scope or being deleted.
+         **************************************************************************************************************/
         ~ServerSocket();
     };
 }
