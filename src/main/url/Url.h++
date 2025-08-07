@@ -13,6 +13,14 @@
 
 namespace StiltFox::DialUp
 {
+    /*******************************************************************************************************************
+     * This struct is used to represent a url in a way that's easy to route. This also makes it easy to get path
+     * variables and queries parameters that you need.
+     *
+     * - protocol - This is a string representation of the communication protocol used. IE: Http, Https, ftp, ect...
+     * - host - This is the hostname included in the url. This is a string representation but it could be an IP address
+     *          or a domain name.
+     ******************************************************************************************************************/
     struct Url
     {
         std::string protocol,host;

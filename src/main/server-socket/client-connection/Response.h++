@@ -12,6 +12,13 @@
 
 namespace StiltFox::DialUp
 {
+    /*******************************************************************************************************************
+     * This struct is used to bundle information and error status together into one return value. This avoids the need
+     * to throw exceptions.
+     *
+     *  - data: the actual transmitted data.
+     *  - errorMessage: And error message if one had occurred. This will default to empty string if no error is present.
+     ******************************************************************************************************************/
     struct Response
     {
         std::vector<char> data;

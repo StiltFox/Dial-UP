@@ -67,7 +67,7 @@ namespace StiltFox::DialUp
         sockaddr_in getAddress() const;
         /***************************************************************************************************************
          * This function closes the socket entirely. All currently listening connections will be terminated. Use this
-         * to shutdown the network activity. Closing an already closed port produces no adverse side effects as this
+         * to shut down the network activity. Closing an already closed port produces no adverse side effects as this
          * function does the proper checks.
          **************************************************************************************************************/
         void closePort();
