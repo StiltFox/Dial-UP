@@ -5,8 +5,10 @@ target_link_libraries(PortAuthority
         EndpointRegistry
         ClientConnection
         ServerSocket
+        StiltFox::StandMixer::DataProcessor
 )
 
-set_target_properties(PortAuthority PROPERTIES PUBLIC_HEADER "src/main/port-authority/PortAuthority.h++")
+set_target_properties(PortAuthority PROPERTIES PUBLIC_HEADER
+        "src/main/port-authority/PortAuthority.h++;src/main/port-authority/StiltFoxAsciiArt.h++")
 target_include_directories(PortAuthority PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
         "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
