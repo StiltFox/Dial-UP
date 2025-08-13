@@ -55,6 +55,8 @@ namespace StiltFox::DialUp
             }
         }
 
+        if (!output) handle = -1;
+
         return output;
     }
 

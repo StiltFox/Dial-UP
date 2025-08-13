@@ -25,7 +25,7 @@ namespace StiltFox::DialUp
         {PortAuthority::LogSevarity::ERROR,"ERROR"}
     };
 
-    const HttpMessage PortAuthority::KILL_MESSAGE = {HttpMessage::Method::DELETE,"*",{"operation","kill"},""};
+    const HttpMessage PortAuthority::KILL_MESSAGE(HttpMessage::Method::DELETE,"*",{{"operation",{"kill"}}},"");
 
     inline bool PortAuthority::openPort(ServerSocket& toOpen)
     {
@@ -37,15 +37,17 @@ namespace StiltFox::DialUp
         }
         else
         {
-            logger(LogSevarity::INFO, "Opening new socket on port " + toOpen.getAddress().sin_port);
+            int portNumber = htons(toOpen.getAddress().sin_port);
+            logger(LogSevarity::INFO, "Opening new socket on port " + to_string(portNumber));
             toOpen.openPort();
             if (toOpen.isOpen())
             {
-                logger(LogSevarity::INFO, "Port opened successfully");
+                logger(LogSevarity::INFO, "Port " + to_string(portNumber) + " opened successfully");
+                output = true;
             }
             else
             {
-                logger(LogSevarity::ERROR, "Failed to open socket on port " + toOpen.getAddress().sin_port);
+                logger(LogSevarity::ERROR, "Failed to open socket on port " + to_string(portNumber));
             }
         }
 
@@ -62,18 +64,18 @@ namespace StiltFox::DialUp
     {
         int errorStatus = 0;
 
-        switch (errorMessage)
-        {
-        case "Connection timed out":
-            errorStatus = 408;
-            break;
-        case "Data received exceeds limit":
-            errorStatus = 413;
-            break;
-        default:
-            errorStatus = 400;
-            break;
-        }
+        // switch (errorMessage)
+        // {
+        // case "Connection timed out":
+        //     errorStatus = 408;
+        //     break;
+        // case "Data received exceeds limit":
+        //     errorStatus = 413;
+        //     break;
+        // default:
+        //     errorStatus = 400;
+        //     break;
+        // }
 
         return {errorStatus,{},""};
     }
@@ -145,11 +147,11 @@ namespace StiltFox::DialUp
         {
             if (openPort(*killSocket))
             {
-                if (workers == nullptr) workers = new thread*[maxThreads];
-
-                thread killThread(listenForKillCommand); //We will not track this later. Just let it go.
-                for (int x=0; x<maxThreads; x++) workers[x] = new thread(connectionThreadHandler);
-                logger(LogSevarity::INFO, "Server Started Successfully");
+        //         if (workers == nullptr) workers = new thread*[maxThreads];
+        //
+        //         thread killThread(listenForKillCommand); //We will not track this later. Just let it go.
+        //         for (int x=0; x<maxThreads; x++) workers[x] = new thread(connectionThreadHandler);
+        //         logger(LogSevarity::INFO, "Server Started Successfully");
             }
         }
     }
@@ -159,12 +161,12 @@ namespace StiltFox::DialUp
         socket->closePort();
         killSocket->closePort();
 
-        for (int x=0; x<maxThreads; x++)
-        {
-            workers[x]->join();
-            delete workers[x];
-            workers[x] = nullptr;
-        }
+        // for (int x=0; x<maxThreads; x++)
+        // {
+        //     workers[x]->join();
+        //     delete workers[x];
+        //     workers[x] = nullptr;
+        // }
 
         delete[] workers;
         workers = nullptr;
