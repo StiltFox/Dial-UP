@@ -21,14 +21,10 @@ namespace StiltFox::DialUp
         int maxThreads;
         long maxWaitTime, maxDataSize;
         std::shared_ptr<ServerSocket> socket, killSocket;
-        static const HttpMessage KILL_MESSAGE;
         std::thread** workers;
 
-        bool openPort(ServerSocket& toOpen);
-        void connectionThreadHandler();
-        void listenForKillCommand();
-
     public:
+        static const HttpMessage KILL_MESSAGE;
         enum class LogSevarity{DEBUG, INFO, WARNING, ERROR};
 
         EndpointRegistry registry;

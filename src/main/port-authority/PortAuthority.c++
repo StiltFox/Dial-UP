@@ -25,9 +25,10 @@ namespace StiltFox::DialUp
         {PortAuthority::LogSevarity::ERROR,"ERROR"}
     };
 
-    const HttpMessage PortAuthority::KILL_MESSAGE(HttpMessage::Method::DELETE,"*",{{"operation",{"kill"}}},"");
+    const HttpMessage PortAuthority::KILL_MESSAGE
+        (HttpMessage::Method::DELETE,"*",{{"operation",{"kill"}}},"");
 
-    inline bool PortAuthority::openPort(ServerSocket& toOpen)
+    inline bool openPort(ServerSocket& toOpen, const std::function<void(PortAuthority::LogSevarity, string)>& logger)
     {
         bool output = false;
 
@@ -37,17 +38,17 @@ namespace StiltFox::DialUp
         }
         else
         {
-            int portNumber = htons(toOpen.getAddress().sin_port);
-            logger(LogSevarity::INFO, "Opening new socket on port " + to_string(portNumber));
+            const int portNumber = htons(toOpen.getAddress().sin_port);
+            logger(PortAuthority::LogSevarity::INFO, "Opening new socket on port " + to_string(portNumber));
             toOpen.openPort();
             if (toOpen.isOpen())
             {
-                logger(LogSevarity::INFO, "Port " + to_string(portNumber) + " opened successfully");
+                logger(PortAuthority::LogSevarity::INFO, "Port " + to_string(portNumber) + " opened successfully");
                 output = true;
             }
             else
             {
-                logger(LogSevarity::ERROR, "Failed to open socket on port " + to_string(portNumber));
+                logger(PortAuthority::LogSevarity::ERROR, "Failed to open socket on port " + to_string(portNumber));
             }
         }
 
@@ -64,49 +65,67 @@ namespace StiltFox::DialUp
     {
         int errorStatus = 0;
 
-        // switch (errorMessage)
-        // {
-        // case "Connection timed out":
-        //     errorStatus = 408;
-        //     break;
-        // case "Data received exceeds limit":
-        //     errorStatus = 413;
-        //     break;
-        // default:
-        //     errorStatus = 400;
-        //     break;
-        // }
+        if (errorMessage == "Connection timed out")
+        {
+            errorStatus = 408;
+        }
+        else if (errorMessage == "Data received exceeds limit")
+        {
+            errorStatus = 413;
+        }
+        else
+        {
+            errorStatus = 400;
+        }
 
         return {errorStatus,{},""};
     }
 
-    void PortAuthority::listenForKillCommand()
+    void connectionThreadHandler(const ServerSocket& socket, const long& maxWaitTime, const long& maxDataSize,
+        const EndpointRegistry& registry)
     {
-        ClientConnection connection(*killSocket, 500, 1000);
-        bool cont = true;
-
-        while (cont)
+        while (socket.isOpen())
         {
+            ClientConnection connection(socket,maxWaitTime,maxDataSize);
             const auto [data, errorMessage] = connection.receiveData();
 
             if (errorMessage.empty())
             {
-                if (HttpMessage requestMessage = data; requestMessage == KILL_MESSAGE)
-                {
-                    cont = false;
-                    socket->closePort();
-                    sendResponse({200,{{"Content-Type",{"text/plain"}}},"shutting down"},connection);
-                }
-                else
-                {
-                    sendResponse({400,{{"Content-Type",{"text/plain"}}},"unknown command"},connection);
-                }
+                auto response = registry.submitMessage(data).printAsResponse();
+                connection.sendData({response.begin(), response.end()});
             }
             else
             {
                 sendResponse(generateErrorFromResponse(errorMessage),connection);
             }
         }
+    }
+
+    void listenForKillCommand(ServerSocket& killSocket)
+    {
+        // ClientConnection connection(killSocket, 500, 1000);
+        // bool cont = true;
+        //
+        // while (cont)
+        // {
+        //     const auto [data, errorMessage] = connection.receiveData();
+        //     if (errorMessage.empty())
+        //     {
+        //         if (HttpMessage requestMessage = data; requestMessage == PortAuthority::KILL_MESSAGE)
+        //         {
+        //             cont = false;
+        //             sendResponse({200,{{"Content-Type",{"text/plain"}}},"shutting down"}, connection);
+        //         }
+        //         else
+        //         {
+        //             sendResponse({400,{{"Content-Type",{"text/plain"}}},"unknown command"},connection);
+        //         }
+        //     }
+        //     else
+        //     {
+        //         sendResponse(generateErrorFromResponse(errorMessage), connection);
+        //     }
+        // }
     }
 
     PortAuthority::PortAuthority(int portNumber, int killPortNumber, int maxWorkerThreads, long maxWaitTime,
@@ -123,7 +142,7 @@ namespace StiltFox::DialUp
             const auto currentTime = time(nullptr);
             const auto localTime = *localtime(&currentTime);
 
-            cout << "[" << LogSeverityToString.at(sevarity) << ": " << put_time(&localTime,"%d-%b-%Y %H:%M:%S") << "]";
+            cout << "[" << LogSeverityToString.at(sevarity) << ": " << put_time(&localTime,"%d-%b-%Y %H:%M:%S") << "] ";
             const auto tokens = StandMixer::DataProcessor::tokenize(message, "\r\n");
 
             if (tokens.size() > 1)
@@ -143,33 +162,53 @@ namespace StiltFox::DialUp
         if (!banner.empty()) cout << banner << endl << endl;
         logger(LogSevarity::INFO, "Starting Application");
 
-        if (openPort(*socket))
+        if (maxThreads > 0 && openPort(*socket, logger))
         {
-            if (openPort(*killSocket))
+            if (openPort(*killSocket, logger))
             {
-        //         if (workers == nullptr) workers = new thread*[maxThreads];
-        //
-        //         thread killThread(listenForKillCommand); //We will not track this later. Just let it go.
-        //         for (int x=0; x<maxThreads; x++) workers[x] = new thread(connectionThreadHandler);
-        //         logger(LogSevarity::INFO, "Server Started Successfully");
+                // if (workers == nullptr) workers = new thread*[maxThreads];
+
+                // thread killThread([this]()
+                // {
+                //     // listenForKillCommand(*killSocket);
+                //     // this->socket->closePort();
+                // });
+                // killThread.detach();//We will not track this later. Just let it go.
+
+                // for (int x=0; x<maxThreads; x++) workers[x] = new thread([this]()
+                // {
+                //     connectionThreadHandler(*this->socket,this->maxWaitTime,this->maxDataSize,this->registry);
+                // });
+                logger(LogSevarity::INFO, "Server started successfully");
+                // if(workers[0] != nullptr) workers[0]->join();
             }
         }
     }
 
     void PortAuthority::stopApplication()
     {
+        logger(LogSevarity::INFO, "Stopping server");
         socket->closePort();
         killSocket->closePort();
+        logger(LogSevarity::INFO, "Ports closed");
 
-        // for (int x=0; x<maxThreads; x++)
-        // {
-        //     workers[x]->join();
-        //     delete workers[x];
-        //     workers[x] = nullptr;
-        // }
+        if (workers != nullptr)
+        {
+            for (int x=0; x<maxThreads; x++)
+            {
+                if (workers[x] != nullptr)
+                {
+                    workers[x]->join();
+                    delete workers[x];
+                    workers[x] = nullptr;
+                }
+            }
+        }
+        logger(LogSevarity::INFO, "Workers stopped");
 
         delete[] workers;
         workers = nullptr;
+        logger(LogSevarity::INFO, "Server stopped successfully");
     }
 
     PortAuthority::~PortAuthority()
@@ -177,22 +216,3 @@ namespace StiltFox::DialUp
         stopApplication();
     }
 }
-//     void PortAuthority::connectionThreadHandler()
-//     {
-//         while (socket->isOpen())
-//         {
-//             auto connection = ServerSocket::Connection::openConnection(*socket, maxWaitTime, maxDataSize);
-//             auto request = connection->listen();
-//
-//             if (request.errorMessage.empty())
-//             {
-//                 HttpMessage message = request.data;
-//                 HttpMessage response = registry.submitMessage(message);
-//                 connection->sendData(response.printAsResponse());
-//             }
-//             else
-//             {
-//                 connection->sendData(generateErrorFromResponse(request.errorMessage).printAsResponse());
-//             }
-//         }
-//     }
