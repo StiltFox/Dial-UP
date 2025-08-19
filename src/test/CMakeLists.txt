@@ -1,4 +1,4 @@
-if(NOT SFSkipTests)
+if(NOT SFSkipTesting)
     find_package(GTest REQUIRED)
     find_package(nlohmann_json REQUIRED)
 

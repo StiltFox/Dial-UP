@@ -18,8 +18,8 @@ configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
 
 install(FILES
         "${CMAKE_CURRENT_BINARY_DIR}/DialUpConfig.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/DialUpVersion.cmake"
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/StorageShed
+        "${CMAKE_CURRENT_BINARY_DIR}/DialUpConfigVersion.cmake"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/DialUp
 )
 
 install(
