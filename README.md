@@ -1,5 +1,5 @@
 # Stilt Fox&reg; Dial Up
-### version 0.x.x
+### version 1.x.x
 Stilt Fox&reg; Dial Up is a collection of libraries designed to make a networked program easier to write. These
 libraries focus on the server side, with the idea that the program you're going to be writing will be serving
 requests. HTTP version 1.1 is supported but may not be up to full ISO specification.
