@@ -1,25 +1,46 @@
-cmake_minimum_required(VERSION 3.0.0)
-project(StiltFox-Web-Framework VERSION 0.1.0)
+cmake_minimum_required(VERSION 3.5.0)
+project(Dial-Up VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-find_package(GTest)
-find_package(UniversalLibrary REQUIRED)
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
-include(GoogleTest)
-enable_testing()
+find_package(StandMixer REQUIRED)
 
-include_directories(modules/controllermanager modules/configurationloader)
+add_subdirectory(src)
 
-add_subdirectory(modules)
-add_library(StiltFox-Web-Framework StiltFox-Web-Framework.cpp)
-target_link_libraries(StiltFox-Web-Framework ConfigurationLoader)
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+        "${CMAKE_CURRENT_BINARY_DIR}/DialUpConfig.cmake"
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/DialUp
+)
 
-add_executable(BehaviorTests StiltFox-Web-FrameworkTest.cpp)
-target_link_libraries(BehaviorTests StiltFox-Web-Framework ConfigurationLoader GTest::Main UniversalLibrary::File UniversalLibrary::CoutCapture UniversalLibrary::TempFile)
-gtest_discover_tests(BehaviorTests)
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/DialUpConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/DialUpVersion.cmake"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/StorageShed
+)
 
-set(CPACK_PROJECT_NAME ${PROJECT_NAME})
-set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
-include(CPack)
+install(
+        TARGETS URL EndpointRegistry HttpMessage PortAuthority ServerSocket ClientConnection
+        EXPORT DialUp
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/Stilt_Fox/DialUp
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/Stilt_Fox/DialUp
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/Stilt_Fox/DialUp
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Stilt_Fox/DialUp
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Stilt_Fox/DialUp
+)
+
+install(EXPORT DialUp
+        FILE DialUpTargets.cmake
+        NAMESPACE StiltFox::DialUp::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/DialUp
+)
+
+# generate the version file for the config file
+write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/DialUpConfigVersion.cmake"
+        VERSION "${version}"
+        COMPATIBILITY AnyNewerVersion
+)

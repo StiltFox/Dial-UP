@@ -1,2 +1,0 @@
-add_library(ControllerManager ControllerManager.cpp)
-target_link_libraries(ControllerManager UniversalLibrary::httpmessage)
