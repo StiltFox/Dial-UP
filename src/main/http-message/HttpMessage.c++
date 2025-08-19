@@ -200,8 +200,7 @@ namespace StiltFox::DialUp
 
         for (const auto & [key, value] : headers)
         {
-            output += key;
-            output += ": ";
+            output += key + ": ";
 
             for (const auto& trait: value)
             {

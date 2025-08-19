@@ -69,6 +69,7 @@ namespace StiltFox::DialUp
     {
         if (handle > -1)
         {
+            shutdown(handle,SHUT_RDWR);
             close(handle);
             handle = -1;
         }

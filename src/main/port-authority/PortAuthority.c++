@@ -26,7 +26,7 @@ namespace StiltFox::DialUp
     };
 
     const HttpMessage PortAuthority::KILL_MESSAGE
-        (HttpMessage::Method::DELETE,"*",{{"operation",{"kill"}}},"");
+        (HttpMessage::Method::DELETE,"",{{"operation",{"kill"}}},"");
 
     inline bool openPort(ServerSocket& toOpen, const std::function<void(PortAuthority::LogSevarity, string)>& logger)
     {
@@ -81,51 +81,44 @@ namespace StiltFox::DialUp
         return {errorStatus,{},""};
     }
 
-    void connectionThreadHandler(const ServerSocket& socket, const long& maxWaitTime, const long& maxDataSize,
-        const EndpointRegistry& registry)
+    void connectionThreadHandler(ClientConnection& connection, const Response& data , const EndpointRegistry& registry)
     {
-        while (socket.isOpen())
-        {
-            ClientConnection connection(socket,maxWaitTime,maxDataSize);
-            const auto [data, errorMessage] = connection.receiveData();
-
-            if (errorMessage.empty())
+            if (data.errorMessage.empty())
             {
-                auto response = registry.submitMessage(data).printAsResponse();
+                auto response = registry.submitMessage(data.data).printAsResponse();
                 connection.sendData({response.begin(), response.end()});
             }
             else
             {
-                sendResponse(generateErrorFromResponse(errorMessage),connection);
+                sendResponse(generateErrorFromResponse(data.errorMessage),connection);
             }
-        }
     }
 
-    void listenForKillCommand(ServerSocket& killSocket)
+    bool checkForKillCommand(const Response& data, ClientConnection& connection)
     {
-        // ClientConnection connection(killSocket, 500, 1000);
-        // bool cont = true;
-        //
-        // while (cont)
-        // {
-        //     const auto [data, errorMessage] = connection.receiveData();
-        //     if (errorMessage.empty())
-        //     {
-        //         if (HttpMessage requestMessage = data; requestMessage == PortAuthority::KILL_MESSAGE)
-        //         {
-        //             cont = false;
-        //             sendResponse({200,{{"Content-Type",{"text/plain"}}},"shutting down"}, connection);
-        //         }
-        //         else
-        //         {
-        //             sendResponse({400,{{"Content-Type",{"text/plain"}}},"unknown command"},connection);
-        //         }
-        //     }
-        //     else
-        //     {
-        //         sendResponse(generateErrorFromResponse(errorMessage), connection);
-        //     }
-        // }
+        bool output = false;
+
+        if (data.errorMessage.empty())
+        {
+            const HttpMessage requestMessage = data.data;
+            if (requestMessage.httpMethod == PortAuthority::KILL_MESSAGE.httpMethod &&
+                requestMessage.body == PortAuthority::KILL_MESSAGE.body && requestMessage.headers.contains("operation")
+                && requestMessage.headers.at("operation") == PortAuthority::KILL_MESSAGE.headers.at("operation"))
+            {
+                sendResponse({200,{{"Content-Type",{"text/plain"}}},"shutting down"}, connection);
+                output = true;
+            }
+            else
+            {
+                sendResponse({400,{{"Content-Type",{"text/plain"}}},"unknown command"},connection);
+            }
+        }
+        else
+        {
+            sendResponse(generateErrorFromResponse(data.errorMessage), connection);
+        }
+
+        return output;
     }
 
     PortAuthority::PortAuthority(int portNumber, int killPortNumber, int maxWorkerThreads, long maxWaitTime,
@@ -136,7 +129,6 @@ namespace StiltFox::DialUp
         maxThreads = maxWorkerThreads;
         this->maxWaitTime = maxWaitTime;
         this->maxDataSize = maxDataSize;
-        workers = nullptr;
         logger = [](LogSevarity sevarity, string message)
         {
             const auto currentTime = time(nullptr);
@@ -166,21 +158,28 @@ namespace StiltFox::DialUp
         {
             if (openPort(*killSocket, logger))
             {
-                // if (workers == nullptr) workers = new thread*[maxThreads];
+                thread killThread([this]()
+                {
+                    while (killSocket->isOpen())
+                    {
+                        ClientConnection killConnection(*killSocket, maxWaitTime, maxDataSize);
+                        const auto response = killConnection.receiveData();
+                        if (checkForKillCommand(response, killConnection)) stopApplication();
+                    }
+                });
+                killThread.detach();
 
-                // thread killThread([this]()
-                // {
-                //     // listenForKillCommand(*killSocket);
-                //     // this->socket->closePort();
-                // });
-                // killThread.detach();//We will not track this later. Just let it go.
-
-                // for (int x=0; x<maxThreads; x++) workers[x] = new thread([this]()
-                // {
-                //     connectionThreadHandler(*this->socket,this->maxWaitTime,this->maxDataSize,this->registry);
-                // });
                 logger(LogSevarity::INFO, "Server started successfully");
-                // if(workers[0] != nullptr) workers[0]->join();
+
+                while (socket->isOpen())
+                {
+                    if (workers.size() < maxThreads)
+                    {
+                        ClientConnection connection(*socket, maxWaitTime, maxDataSize);
+                        auto data = connection.receiveData();
+                        workers.emplace_back([&](){connectionThreadHandler(connection, data, registry);}).detach();
+                    }
+                }
             }
         }
     }
@@ -191,28 +190,11 @@ namespace StiltFox::DialUp
         socket->closePort();
         killSocket->closePort();
         logger(LogSevarity::INFO, "Ports closed");
-
-        if (workers != nullptr)
-        {
-            for (int x=0; x<maxThreads; x++)
-            {
-                if (workers[x] != nullptr)
-                {
-                    workers[x]->join();
-                    delete workers[x];
-                    workers[x] = nullptr;
-                }
-            }
-        }
-        logger(LogSevarity::INFO, "Workers stopped");
-
-        delete[] workers;
-        workers = nullptr;
         logger(LogSevarity::INFO, "Server stopped successfully");
     }
 
     PortAuthority::~PortAuthority()
     {
-        stopApplication();
+        if (socket->isOpen() || killSocket->isOpen()) stopApplication();
     }
 }

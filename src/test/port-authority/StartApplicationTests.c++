@@ -8,61 +8,13 @@
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 #include "StiltFoxAsciiArt.h++"
-#include "PortAuthority.h++"
+#include "PortAuthorityTestingUtils.h++"
 
 using namespace std;
 using namespace nlohmann;
 
 namespace StiltFox::DialUp::Tests::PortAuthorityTests::StartApplication
 {
-    typedef unordered_map<PortAuthority::LogSevarity,vector<string>> LogMap;
-
-    inline shared_ptr<LogMap> setLoggerOnPortAuthority(PortAuthority& authority, mutex& loggerMutex)
-    {
-         auto logger = make_shared<LogMap>();
-
-        authority.logger = [logger, &loggerMutex](PortAuthority::LogSevarity logLevel, string message)
-        {
-            lock_guard lock(loggerMutex);
-            (*logger)[logLevel].push_back(message);
-        };
-
-        return logger;
-    }
-
-    inline bool checkLogMapForValue(const PortAuthority::LogSevarity& logLevel, const LogMap& logMap,
-        const string& value)
-    {
-        const auto logLevelValues = logMap.contains(logLevel) ? logMap.at(logLevel) : vector<string>();
-        return find(logLevelValues.begin(), logLevelValues.end(), value) != logLevelValues.end();
-    }
-
-    inline bool checkForErrors(mutex& loggerMutex, const LogMap& logMap)
-    {
-        bool output = false;
-
-        lock_guard guard(loggerMutex);
-        if (logMap.contains(PortAuthority::LogSevarity::ERROR) && !logMap.at(PortAuthority::LogSevarity::ERROR).empty())
-            output = true;
-
-        return output;
-    }
-
-    inline bool checkForServerSuccessfulBootUp(mutex& loggerMutex, const LogMap& logMap)
-    {
-        lock_guard guard(loggerMutex);
-        return !checkLogMapForValue(PortAuthority::LogSevarity::INFO, logMap, "Server started successfully");
-    }
-
-    inline void waitForApplicationBootupThenPowerDown(mutex& loggerMutex, PortAuthority& application,
-        const LogMap& logMap)
-    {
-        auto startTime = chrono::system_clock::now();
-        while(chrono::system_clock::now() - startTime < chrono::seconds(5) &&
-            checkForErrors(loggerMutex, logMap) && checkForServerSuccessfulBootUp(loggerMutex, logMap));
-        application.stopApplication();
-    }
-
     TEST(StartApplication, will_print_a_default_banner_to_standard_console_output_when_called_without_a_banner)
     {
         //given we have a port authority
@@ -231,7 +183,7 @@ namespace StiltFox::DialUp::Tests::PortAuthorityTests::StartApplication
 
         //then the log will contain an info log stating that the application has started
         json printableLogMap = *logMap;
-        EXPECT_TRUE(checkLogMapForValue(PortAuthority::LogSevarity::INFO, *logMap, "Server Started Successfully"))
+        EXPECT_TRUE(checkLogMapForValue(PortAuthority::LogSevarity::INFO, *logMap, "Server started successfully"))
             << printableLogMap.dump(4);
     }
 }

@@ -36,3 +36,25 @@ These libraries and programs are required to build and run this project.
 - C++ compiler
   - must support C++ 20 standard or higher
   - we at Stilt Fox&reg; use g++
+- Stilt Fox&reg; Stand Mixer
+  - this can be found [here](https://github.com/StiltFox/StandMixer)
+## Installation
+The following commands will install the libraries to your system. These will exist globally to all users. If you wish to
+install for a single user, please adjust accordingly. Also, you will require sudo privileges to run the 
+`cmake --install .` command.
+
+```shell
+mkdir build
+cd build
+cmake -DSFSkipTesting=true -DCMAKE_BUILD_TYPE=Release .. 
+cmake --build .
+cmake --install .
+cd ..
+```
+## Linking to Stilt Fox&reg; Dial-Up
+Linking to Stilt Fox&reg; Dial-Up is easy. In your CMakeLists.txt file include the following line: \
+`find_package(Dial-Up REQUIRED)` \
+Then to link your to your project use the following line: \
+`target_link_libraries(MyProject StiltFox::DialUp::PortAuthority)` \
+Please notice that each module that you want to link must be linked seperatly as shown above. There is no way to just
+include all modules. This allows you to include only what you need in your build.

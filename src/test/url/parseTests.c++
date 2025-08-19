@@ -141,7 +141,7 @@ namespace StiltFox::DialUp::Tests::Parse
         //when we parse the url
         const auto actual = Url::parse(emptyString);
 
-        //then we get back a null pointer
+        //then we get back an empty object
         const Url expected = {};
         EXPECT_EQ(expected, actual);
     }
