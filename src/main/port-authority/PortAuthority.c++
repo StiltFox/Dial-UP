@@ -81,16 +81,17 @@ namespace StiltFox::DialUp
         return {errorStatus,{},""};
     }
 
-    void connectionThreadHandler(ClientConnection& connection, const Response& data , const EndpointRegistry& registry)
+    void connectionThreadHandler(shared_ptr<ClientConnection> connection, const shared_ptr<Response> data ,
+        const EndpointRegistry& registry)
     {
-            if (data.errorMessage.empty())
+            if (data->errorMessage.empty())
             {
-                auto response = registry.submitMessage(data.data).printAsResponse();
-                connection.sendData({response.begin(), response.end()});
+                auto response = registry.submitMessage(data->data).printAsResponse();
+                connection->sendData({response.begin(), response.end()});
             }
             else
             {
-                sendResponse(generateErrorFromResponse(data.errorMessage),connection);
+                sendResponse(generateErrorFromResponse(data->errorMessage),*connection);
             }
     }
 
@@ -175,8 +176,8 @@ namespace StiltFox::DialUp
                 {
                     if (workers.size() < maxThreads)
                     {
-                        ClientConnection connection(*socket, maxWaitTime, maxDataSize);
-                        auto data = connection.receiveData();
+                        auto connection = make_shared<ClientConnection>(*socket, maxWaitTime, maxDataSize);
+                        auto data = make_shared<Response>(connection->receiveData());
                         workers.emplace_back([&](){connectionThreadHandler(connection, data, registry);}).detach();
                     }
                 }
