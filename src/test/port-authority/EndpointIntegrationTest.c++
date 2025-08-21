@@ -32,7 +32,8 @@ namespace StiltFox::DialUp::Tests::PortAuthorityTests::EndpointIntegrationTests
         auto actual = sendHttpRequest({HttpMessage::Method::GET, "http://localhost:2000/home"});
 
         //then an expected response is sent
-        EXPECT_EQ(actual,HttpMessage{200});
+        json logMapJson = *logMap;
+        EXPECT_EQ(actual,HttpMessage{200}) << logMapJson.dump(4);
         authority.stopApplication();
         serverThread.join();
     }
