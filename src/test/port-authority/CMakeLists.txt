@@ -4,6 +4,7 @@ add_subdirectory(testing-utilities)
 add_executable(PortAuthorityTests
         StartApplicationTests.c++
         KillListenerTests.c++
+        EndpointIntegrationTest.c++
 )
 
 target_link_libraries(PortAuthorityTests

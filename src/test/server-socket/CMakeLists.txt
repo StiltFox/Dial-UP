@@ -12,5 +12,6 @@ target_link_libraries(SocketTests
         PrintHelper
         HttpMessage
         ServerSocket
+        PortAuthorityTestingUtils
         ClientConnection
 )

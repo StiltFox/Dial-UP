@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 #include <curl/curl.h>
 #include "PrintHelper.h++"
+#include "PortAuthorityTestingUtils.h++"
 #include "ClientConnection.h++"
 #include "ServerSocket.h++"
 
@@ -94,18 +95,39 @@ namespace StiltFox::DialUp
             const auto responseData = clientConnection.receiveData();
             actual = make_shared<HttpMessage>(responseData.data);
         });
+        connectionListenerThread.detach();
 
         //and we send data to the port
-        CURL* curl;
-
-        curl = curl_easy_init();
-        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:4200/asdf");
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, expectedData.body.c_str());
-        curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-        connectionListenerThread.join();
+        Tests::PortAuthorityTests::sendHttpRequest({
+            HttpMessage::Method::POST,"http://localhost:4200/asdf",{}, expectedData.body
+        });
 
         //then the data is received
         EXPECT_EQ(*actual, expectedData);
+    }
+
+    TEST(Connection, sendData_will_send_a_reply_back_to_the_client)
+    {
+        //given we have a port that we're currently lisenting to
+        auto openPort = make_shared<ServerSocket>(4200);
+        openPort->openPort();
+        HttpMessage expected(200);
+
+        //when we open a connection
+        thread connectionListenerThread([openPort, expected](){
+            ClientConnection clientConnection(openPort->getHandle(), openPort->getAddress());
+            const auto responseData = clientConnection.receiveData();
+            string message = expected.printAsResponse();
+            clientConnection.sendData({message.begin(), message.end()});
+        });
+        connectionListenerThread.detach();
+
+        //and we send data to the port
+        auto actual = Tests::PortAuthorityTests::sendHttpRequest({
+            HttpMessage::Method::GET, "http://localhost:4200/asdf",{}, "apple"
+        });
+
+        //then the data is received
+        EXPECT_EQ(actual, expected);
     }
 }

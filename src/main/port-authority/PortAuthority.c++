@@ -81,19 +81,6 @@ namespace StiltFox::DialUp
         return {errorStatus,{},""};
     }
 
-    void connectionThreadHandler(ClientConnection& connection, const Response& data , const EndpointRegistry& registry)
-    {
-            if (data.errorMessage.empty())
-            {
-                auto response = registry.submitMessage(data.data).printAsResponse();
-                connection.sendData({response.begin(), response.end()});
-            }
-            else
-            {
-                sendResponse(generateErrorFromResponse(data.errorMessage),connection);
-            }
-    }
-
     bool checkForKillCommand(const Response& data, ClientConnection& connection)
     {
         bool output = false;
@@ -121,12 +108,64 @@ namespace StiltFox::DialUp
         return output;
     }
 
+    inline void startKillThread(shared_ptr<ServerSocket> killSocket, PortAuthority* authority)
+    {
+        thread killThread([killSocket, authority]()
+        {
+            while (killSocket->isOpen())
+            {
+                ClientConnection killConnection(*killSocket);
+                const auto response = killConnection.receiveData();
+                if (checkForKillCommand(response, killConnection)) authority->stopApplication();
+            }
+        });
+        killThread.detach();
+    }
+
+    void PortAuthority::startWorkerThread(shared_ptr<ClientConnection> connection, Response message)
+    {
+        thread workerThread([this, connection, message]()
+        {
+            if (message.errorMessage.empty())
+            {
+                sendResponse(registry.submitMessage(message.data), *connection);
+            }
+            else
+            {
+                sendResponse(generateErrorFromResponse(message.errorMessage),*connection);
+            }
+            lock_guard lock{threadCountMutex};
+            currentThreads--;
+        });
+        workerThread.detach();
+    }
+
+    void PortAuthority::startMainLoop()
+    {
+        while (socket->isOpen())
+        {
+            if (currentThreads < maxThreads)
+            {
+                auto connection = make_shared<ClientConnection>(*socket, maxWaitTime, maxDataSize);
+                auto data = connection->receiveData();
+                logger(LogSevarity::DEBUG, "Thread starting for: " + string(data.data.begin(), data.data.end()));
+                if (socket->isOpen())
+                {
+                    lock_guard guard(threadCountMutex);
+                    startWorkerThread(connection, data);
+                    currentThreads++;
+                }
+            }
+        }
+    }
+
     PortAuthority::PortAuthority(int portNumber, int killPortNumber, int maxWorkerThreads, long maxWaitTime,
         long maxDataSize)
     {
         socket = make_shared<ServerSocket>(portNumber);
         killSocket = make_shared<ServerSocket>(killPortNumber);
         maxThreads = maxWorkerThreads;
+        currentThreads = 0;
         this->maxWaitTime = maxWaitTime;
         this->maxDataSize = maxDataSize;
         logger = [](LogSevarity sevarity, string message)
@@ -154,33 +193,11 @@ namespace StiltFox::DialUp
         if (!banner.empty()) cout << banner << endl << endl;
         logger(LogSevarity::INFO, "Starting Application");
 
-        if (maxThreads > 0 && openPort(*socket, logger))
+        if (maxThreads > 0 && openPort(*socket, logger) && openPort(*killSocket, logger))
         {
-            if (openPort(*killSocket, logger))
-            {
-                thread killThread([this]()
-                {
-                    while (killSocket->isOpen())
-                    {
-                        ClientConnection killConnection(*killSocket, maxWaitTime, maxDataSize);
-                        const auto response = killConnection.receiveData();
-                        if (checkForKillCommand(response, killConnection)) stopApplication();
-                    }
-                });
-                killThread.detach();
-
-                logger(LogSevarity::INFO, "Server started successfully");
-
-                while (socket->isOpen())
-                {
-                    if (workers.size() < maxThreads)
-                    {
-                        ClientConnection connection(*socket, maxWaitTime, maxDataSize);
-                        auto data = connection.receiveData();
-                        workers.emplace_back([&](){connectionThreadHandler(connection, data, registry);}).detach();
-                    }
-                }
-            }
+            startKillThread(killSocket,this);
+            logger(LogSevarity::INFO, "Server started successfully");
+            startMainLoop();
         }
     }
 
@@ -196,5 +213,6 @@ namespace StiltFox::DialUp
     PortAuthority::~PortAuthority()
     {
         if (socket->isOpen() || killSocket->isOpen()) stopApplication();
+        while (currentThreads>0); //wait for threads to finish
     }
 }

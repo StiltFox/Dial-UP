@@ -13,6 +13,7 @@
 #include "EndpointRegistry.h++"
 #include "ServerSocket.h++"
 #include "StiltFoxAsciiArt.h++"
+#include "ClientConnection.h++"
 
 namespace StiltFox::DialUp
 {
@@ -24,10 +25,13 @@ namespace StiltFox::DialUp
      ******************************************************************************************************************/
     class PortAuthority
     {
-        int maxThreads;
+        std::mutex threadCountMutex;
+        int maxThreads, currentThreads;
         long maxWaitTime, maxDataSize;
         std::shared_ptr<ServerSocket> socket, killSocket;
-        std::vector<std::thread> workers;
+
+        void startMainLoop();
+        void startWorkerThread(std::shared_ptr<ClientConnection> connection, Response data);
 
     public:
         /***************************************************************************************************************
