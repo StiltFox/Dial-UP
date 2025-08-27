@@ -6,9 +6,9 @@
 * of use.
 ********************************************************/
 #include <curl/curl.h>
-#include <bits/chrono.h>
 #include "Stilt_Fox/StandMixer/DataProcessor.h++"
 #include "PortAuthorityTestingUtils.h++"
+#include <algorithm>
 
 namespace StiltFox::DialUp::Tests::PortAuthorityTests
 {
