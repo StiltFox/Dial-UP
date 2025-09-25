@@ -10,11 +10,7 @@
 #include <cstring>
 #include <thread>
 #include <mutex>
-#include <queue>
 #include "ClientConnection.h++"
-
-#include <stack>
-#include <nlohmann/detail/input/parser.hpp>
 
 using namespace std;
 

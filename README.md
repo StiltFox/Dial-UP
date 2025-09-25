@@ -22,11 +22,6 @@ recommended.
 
 With The death of Windows 10 (as of the time of writing this) directly around the corner, the roadmap to support Windows
 systems has been completely canceled.
-
-### On Macintosh
-Mac compilation also has not been tested. Mostly because a Mac computer is required to do it. From what we understand
-this code should be able to run on Mac, but may require some tweaking. Because of the similarities between Mac and Linux
-a lot of times the code is portable. If you happen to test this out, and it works please let us know.
 ------------------------------------------------------------------------------------------------------------------------
 ## Prerequisites
 ### Main Program
@@ -39,6 +34,7 @@ These libraries and programs are required to build and run this project.
 - Stilt Fox&reg; Stand Mixer
   - this can be found [here](https://github.com/StiltFox/StandMixer)
 ## Installation
+### Linux
 The following commands will install the libraries to your system. These will exist globally to all users. If you wish to
 install for a single user, please adjust accordingly. Also, you will require sudo privileges to run the 
 `cmake --install .` command.
@@ -51,6 +47,34 @@ cmake --build .
 cmake --install .
 cd ..
 ```
+### Mac
+Mac installation works basically the same as linux, but you will need to include the toolchain file 
+[mac.cmake](mac.cmake).
+
+```shell
+mkdir build
+cd build
+cmake -DSFSkipTesting=true -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../mac.cmake .. 
+cmake --build .
+cmake --install .
+cd ..
+```
+
+### Installing without sudo privileges
+up and to this point we've been assuming you have sudo privileges and are able to install libraries 'system-wide'. If
+for some reason you dont have access to `/usr/local` we can instead install to the home directory.
+
+In linux you should have a folder called `.local`. You can install the files here using the following command in place
+of the normal installation command: `cmake --install . --prefix ${HOME}/.local`. 
+
+On Mac, you would have a `Libraries` folder. Similar to Linux, you can use the following command instead of the normal
+installation command: `cmake --install . --prefix ${HOME}/Libraries`.
+
+Doing this will cause problems when CMake needs to find one of these packages. `find_package(DialUp REQUIRED)` will fail
+without help. To fix this we need to tell cmake where to find the cmake configuration files. To do this we will add the
+following line to our `~/.bashrc` file, or however you persist environment variables: `export `
+
+
 ## Linking to Stilt Fox&reg; Dial-Up
 Linking to Stilt Fox&reg; Dial-Up is easy. In your CMakeLists.txt file include the following line: \
 `find_package(Dial-Up REQUIRED)` \
