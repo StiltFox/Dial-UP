@@ -72,7 +72,11 @@ installation command: `cmake --install . --prefix ${HOME}/Libraries`.
 
 Doing this will cause problems when CMake needs to find one of these packages. `find_package(DialUp REQUIRED)` will fail
 without help. To fix this we need to tell cmake where to find the cmake configuration files. To do this we will add the
-following line to our `~/.bashrc` file, or however you persist environment variables: `export `
+following line to our `~/.bashrc` file, or however you persist environment variables: 
+`export DialUp_DIR=${HOME}/.local/Stilt_Fox/DialUp`.
+
+**NOTE:** The path provided above could be wrong. You will ned to find where the cmake config file is installed on your
+machine.
 
 
 ## Linking to Stilt Fox&reg; Dial-Up
