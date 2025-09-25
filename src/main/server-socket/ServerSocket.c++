@@ -48,7 +48,7 @@ namespace StiltFox::DialUp
         {
             if (setOptions(handle))
             {
-                if (bind(handle,(sockaddr*)&address,sizeof(address)) >= 0)
+                if (::bind(handle,(sockaddr*)&address,sizeof(address)) >= 0)
                 {
                     if(listen(handle, queueSize) >= 0) output = true;
                 }
