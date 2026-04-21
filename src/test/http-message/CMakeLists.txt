@@ -11,3 +11,4 @@ target_link_libraries(HttpMessageTests
         PrintHelper
         HttpMessage
 )
+
