@@ -5,14 +5,13 @@
 * See LICENSE on root project directory for terms
 * of use.
 ********************************************************/
-#include <codecvt>
 #include <thread>
 #include <gtest/gtest.h>
 #include <curl/curl.h>
 #include "PrintHelper.h++"
-#include "PortAuthorityTestingUtils.h++"
 #include "ClientConnection.h++"
 #include "ServerSocket.h++"
+#include "HttpClient.h++"
 
 using namespace std;
 
@@ -98,7 +97,8 @@ namespace StiltFox::DialUp
         connectionListenerThread.detach();
 
         //and we send data to the port
-        Tests::PortAuthorityTests::sendHttpRequest({
+        const auto client = HttpClient::getInstance();
+        client->sendWebRequest({
             HttpMessage::Method::POST,"http://localhost:4200/asdf",{}, expectedData.body
         });
 
@@ -123,7 +123,8 @@ namespace StiltFox::DialUp
         connectionListenerThread.detach();
 
         //and we send data to the port
-        auto actual = Tests::PortAuthorityTests::sendHttpRequest({
+        const auto client = HttpClient::getInstance();
+        const auto actual = client->sendWebRequest({
             HttpMessage::Method::GET, "http://localhost:4200/asdf",{}, "apple"
         });
 

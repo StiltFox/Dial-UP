@@ -7,7 +7,6 @@
 ********************************************************/
 #include "EndpointRegistry.h++"
 #include <stack>
-#include <ranges>
 
 using namespace std;
 

@@ -6,7 +6,6 @@
 * of use.
 ********************************************************/
 #include <curl/curl.h>
-#include "Stilt_Fox/StandMixer/DataProcessor.h++"
 #include "PortAuthorityTestingUtils.h++"
 #include <algorithm>
 
@@ -59,47 +58,5 @@ namespace StiltFox::DialUp::Tests::PortAuthorityTests
     {
         waitForApplicationBootup(loggerMutex, logMap);
         application.stopApplication();
-    }
-
-    size_t curlCallBack(char* ptr, size_t size, size_t nmemb, void* userdata)
-    {
-        for (int x=0; x<nmemb; x++) ((std::string*)userdata)->append(1,ptr[x]);
-        return nmemb;
-    }
-
-    HttpMessage sendHttpRequest(const HttpMessage& message)
-    {
-        HttpMessage output = {-1};
-        CURL* curl = curl_easy_init();
-
-        curl_easy_setopt(curl, CURLOPT_URL, message.requestUri.toUrlWithoutParameters().c_str());
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, message.body.c_str());
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, message.getHttpMethodAsString().c_str());
-        curl_slist* headers = nullptr;
-        for (const auto& [key,value] : message.headers)
-        {
-            std::string output = key + ": ";
-            for (const auto& trait : value)
-            {
-                if (!output.ends_with(": ")) output += ",";
-                output += trait;
-            }
-            headers = curl_slist_append(headers, output.c_str());
-        }
-
-        if (headers != nullptr) curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlCallBack);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&output.body);
-
-        curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-        curl_slist_free_all(headers);
-
-        long tempStatusCode;
-        curl_easy_getinfo(curl,CURLINFO_RESPONSE_CODE, &tempStatusCode);
-        output.statusCode = tempStatusCode;
-
-        return output;
     }
 }

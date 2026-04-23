@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 #include "PrintHelper.h++"
+#include "HttpClient.h++"
 #include "PortAuthorityTestingUtils.h++"
 
 using namespace std;
@@ -30,11 +31,12 @@ namespace StiltFox::DialUp::Tests::PortAuthorityTests::KillListenerTests
         waitForApplicationBootup(loggerMutex, *logMap);
 
         //when we send the kill command
-        auto response = sendHttpRequest({HttpMessage::Method::DELETE,"http://localhost:2010",
-                                        {{"operation",{"kill"}}}});
+        const auto client = HttpClient::getInstance();
+        const auto response = client->sendWebRequest({HttpMessage::Method::DELETE,"http://localhost:2010", 
+                {{"operation",{"kill"}}}});
 
         //then the application has terminated
-        HttpMessage expected = {200,{},"shutting down"};
+        HttpMessage expected = {200,{{"Content-Type",{"text/plain"}}},"shutting down"};
         EXPECT_FALSE(serverRunning);
         EXPECT_EQ(response,expected);
 
@@ -58,11 +60,12 @@ namespace StiltFox::DialUp::Tests::PortAuthorityTests::KillListenerTests
         waitForApplicationBootup(loggerMutex, *logMap);
 
         //when we send a bad kill command
-        auto response = sendHttpRequest({HttpMessage::Method::POST,"http://localhost:2010",
+        const auto client = HttpClient::getInstance();
+        const auto response = client->sendWebRequest({HttpMessage::Method::POST,"http://localhost:2010",
                                         {{"operation",{"kill"}}}});
 
         //then the application has not terminated and we get back a 400
-        HttpMessage expected = {400,{},"unknown command"};
+        HttpMessage expected = {400,{{"Content-Type",{"text/plain"}}},"unknown command"};
         EXPECT_TRUE(serverRunning);
         EXPECT_EQ(response,expected);
 

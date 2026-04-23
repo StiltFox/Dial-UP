@@ -19,7 +19,5 @@ namespace StiltFox::DialUp::Tests::PortAuthorityTests
     bool checkForServerSuccessfulBootUp(std::mutex& loggerMutex, const LogMap& logMap);
     void waitForApplicationBootup(std::mutex& loggerMutex,const LogMap& logMap);
     void waitForApplicationBootupThenPowerDown(std::mutex& loggerMutex,PortAuthority& application,const LogMap& logMap);
-    size_t curlCallBack(char* ptr,size_t size,size_t nmemb,void* userdata);
-    HttpMessage sendHttpRequest(const HttpMessage& message);
 }
 #endif

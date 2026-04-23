@@ -1,6 +1,7 @@
 add_library(HttpClient HttpClient.c++)
 
 target_link_libraries(HttpClient
+  CURL::libcurl
   HttpMessage
 )
 

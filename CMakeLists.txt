@@ -5,10 +5,13 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+enable_testing()
+
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 find_package(StandMixer REQUIRED)
+find_package(CURL REQUIRED)
 
 add_subdirectory(src)
 

@@ -55,7 +55,9 @@ namespace StiltFox::DialUp
     curl_header* header;
     curl_header* prev = nullptr;
 
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &output.statusCode);
+    long statusBuffer = 0;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &statusBuffer);
+    output.statusCode = (int)statusBuffer;
     while ((header = curl_easy_nextheader(curl, CURLH_HEADER, 0, prev))) {
       output.headers[header->name] = {header->value};
       prev = header;
@@ -94,11 +96,7 @@ namespace StiltFox::DialUp
 
   HttpClient::~HttpClient()
   {
-    if(client != nullptr)
-    {
-      delete client;
-      client = nullptr;
-    }
+    if(client != nullptr) client = nullptr;
     curl_global_cleanup();
   }
 }

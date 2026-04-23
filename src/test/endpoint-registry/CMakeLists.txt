@@ -12,3 +12,6 @@ target_link_libraries(EndpointRegistryTests
         HttpMessage
         EndpointRegistry
 )
+
+add_test(NAME Endpoint-Registry COMMAND EndpointRegistryTests)
+
