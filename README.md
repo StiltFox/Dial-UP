@@ -2,9 +2,9 @@
 
 **version 1.x.x**
 
-Stilt Fox&reg; Dial Up is a collection of libraries designed to make a networked program easier to write. These
-libraries focus on the server side, with the idea that the program you're going to be writing will be serving
-requests. HTTP version 1.1 is supported but may not be up to full ISO specification.
+Stilt Fox&reg; Dial Up is a collection of libraries designed to make a networked program easier to write. While most of
+this library focuses on the idea of writing a server side program, a client class does now exist at
+`src/main/http-client`. HTTP version 1.1 is supported but may not be up to full ISO specification.
 
 This program also allows for parsing raw socket data. This means that if you aren't writing something based on HTTP
 then you can still just use the socket on its own.
@@ -38,6 +38,9 @@ These libraries and programs are required to build and run this project.
   - we at Stilt Fox&reg; use g++
 - Stilt Fox&reg; Stand Mixer
   - this can be found [here](https://github.com/StiltFox/StandMixer)
+- libcurl
+  - this can be found [here](https://curl.se/)
+  - `sudo pacman -S curl`
 
 ## Installation
 
@@ -72,16 +75,16 @@ cd ..
 
 ### Installing without sudo privileges
 
-up and to this point we've been assuming you have sudo privileges and are able to install libraries 'system-wide'. If
-for some reason you dont have access to `/usr/local` we can instead install to the home directory.
+Up and to this point we've been assuming you have sudo privileges and are able to install libraries 'system-wide'. If
+for some reason you don't have access to `/usr/local` we can instead install to the home directory.
 
-In linux you should have a folder called `.local`. You can install the files here using the following command in place
+In Linux you should have a folder called `.local`. You can install the files here using the following command in place
 of the normal installation command: `cmake --install . --prefix ${HOME}/.local`. 
 
 On Mac, you would have a `Libraries` folder. Similar to Linux, you can use the following command instead of the normal
 installation command: `cmake --install . --prefix ${HOME}/Libraries`.
 
-Doing this will cause problems when CMake needs to find one of these packages. `find_package(DialUp REQUIRED)` will fail
+Doing this will cause problems when cmake needs to find one of these packages. `find_package(DialUp REQUIRED)` will fail
 without help. To fix this we need to tell cmake where to find the cmake configuration files. To do this we will add the
 following line to our `~/.bashrc` file, or however you persist environment variables: 
 `export DialUp_DIR=${HOME}/.local/Stilt_Fox/DialUp`.
@@ -96,5 +99,5 @@ Linking to Stilt Fox&reg; Dial-Up is easy. In your CMakeLists.txt file include t
 `find_package(Dial-Up REQUIRED)` \
 Then to link your to your project use the following line: \
 `target_link_libraries(MyProject StiltFox::DialUp::PortAuthority)` \
-Please notice that each module that you want to link must be linked seperatly as shown above. There is no way to just
+Please notice that each module that you want to link must be linked separate as shown above. There is no way to just
 include all modules. This allows you to include only what you need in your build.
