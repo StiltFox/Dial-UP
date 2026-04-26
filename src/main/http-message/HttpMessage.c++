@@ -7,7 +7,6 @@
 ********************************************************/
 #include <queue>
 #include <cctype>
-#include <locale>
 #include <Stilt_Fox/StandMixer/DataProcessor.h++>
 #include "HttpMessage.h++"
 

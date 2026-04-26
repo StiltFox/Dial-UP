@@ -11,3 +11,6 @@ target_link_libraries(UrlTests
         PrintHelper
         URL
 )
+
+add_test(NAME Url COMMAND UrlTests)
+

@@ -2,6 +2,7 @@ find_package(CURL REQUIRED)
 add_subdirectory(testing-utilities)
 
 add_executable(PortAuthorityTests
+        test_main.c++
         StartApplicationTests.c++
         KillListenerTests.c++
         EndpointIntegrationTest.c++
@@ -9,7 +10,6 @@ add_executable(PortAuthorityTests
 
 target_link_libraries(PortAuthorityTests
         gtest
-        gtest_main
         nlohmann_json
         CURL::libcurl
         PortAuthorityTestingUtils
@@ -18,4 +18,8 @@ target_link_libraries(PortAuthorityTests
         ServerSocket
         ClientConnection
         PortAuthority
+        HttpClient
 )
+
+add_test(NAME Port-Authority COMMAND PortAuthorityTests)
+

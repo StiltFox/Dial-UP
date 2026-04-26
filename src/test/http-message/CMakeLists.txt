@@ -11,3 +11,6 @@ target_link_libraries(HttpMessageTests
         PrintHelper
         HttpMessage
 )
+
+add_test(NAME Http-Message COMMAND HttpMessageTests)
+

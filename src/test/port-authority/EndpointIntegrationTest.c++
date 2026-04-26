@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 #include "PrintHelper.h++"
+#include "HttpClient.h++"
 #include "PortAuthorityTestingUtils.h++"
 
 using namespace std;
@@ -29,7 +30,8 @@ namespace StiltFox::DialUp::Tests::PortAuthorityTests::EndpointIntegrationTests
         authority.registry.registerEndpoint("/home",HttpMessage::Method::GET,endpoint);
 
         //when we send an http request
-        auto actual = sendHttpRequest({HttpMessage::Method::GET, "http://localhost:2000/home"});
+        const auto client = HttpClient::getInstance();
+        const auto actual = client->sendWebRequest({HttpMessage::Method::GET, "http://localhost:2000/home"});
 
         //then an expected response is sent
         json logMapJson = *logMap;
