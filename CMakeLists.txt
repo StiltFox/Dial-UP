@@ -27,7 +27,7 @@ install(FILES
 )
 
 install(
-        TARGETS URL EndpointRegistry HttpMessage PortAuthority ServerSocket ClientConnection
+        TARGETS URL EndpointRegistry HttpMessage PortAuthority ServerSocket ClientConnection HttpClient
         EXPORT DialUp
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/Stilt_Fox/DialUp
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/Stilt_Fox/DialUp
