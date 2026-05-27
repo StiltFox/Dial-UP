@@ -73,7 +73,14 @@ namespace StiltFox::DialUp
             long maxDataSizeBytes = 80000000);
 
         /***************************************************************************************************************
-         * This function will block the thread and wait for incoming network traffic. Then based on set values like
+         * This function will block the thread and wait for incoming network traffic. Upon recipit, the internal handle
+         * variable will be set to the connection's handle. From here on, functions like recieve and send data will be
+         * valid and work.
+         **************************************************************************************************************/
+        void waitForClientConnection();
+
+        /***************************************************************************************************************
+         * This function will check if a client connection handle is opened. Then based on set values like
          * 'maxWaitTimeMs' it will retrieve data while checking for error or failure conditions. This data will be
          * returned as a raw array of chars. This data is untyped, and you should parse it out into whatever format you
          * wish before using it in your program. Validation is your responsibility.
