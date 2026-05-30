@@ -8,15 +8,10 @@
 #ifdef MAC
     #include <sys/types.h>
 #endif
-#include <cstring>
-#include <queue>
-#include <mutex>
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include "ServerSocket.h++"
-
-#include <iostream>
 
 using namespace std;
 

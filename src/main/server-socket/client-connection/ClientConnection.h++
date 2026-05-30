@@ -77,7 +77,7 @@ namespace StiltFox::DialUp
          * variable will be set to the connection's handle. From here on, functions like recieve and send data will be
          * valid and work.
          **************************************************************************************************************/
-        void waitForClientConnection();
+        void waitForConnection();
 
         /***************************************************************************************************************
          * This function will check if a client connection handle is opened. Then based on set values like

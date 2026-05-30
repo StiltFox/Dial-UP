@@ -42,18 +42,10 @@ namespace StiltFox::DialUp
         char buffer[1024] = {};
 
         if (maxDataSizeBytes % 1024 > 0) numIterations++;
-
         do
         {
             memset(buffer, 0, 1024);
-
             numIterations--;
-            if (numIterations < 0)
-            {
-                lock_guard guard(readLock);
-                rawData.errorMessage = "Data received exceeds limit";
-                break;
-            }
 
             read(handle, buffer, 1024);
             for (int y=0; y < 1024; y++)
@@ -62,20 +54,25 @@ namespace StiltFox::DialUp
                 if (buffer[y]=='\000') break;
                 rawData.data.emplace_back(buffer[y]);
             }
-        } while ((buffer[1024 -1] != '\000') && !holt);
+        } while ((buffer[1024 -1] != '\000') && !holt && numIterations > 0);
 
         lock_guard guard(readLock);
+        if (numIterations <= 0 || rawData.data.size() > maxDataSizeBytes)
+            rawData.errorMessage = "Data received exceeds limit";
+
         holt = true;
     }
 
+    void ClientConnection::waitForConnection()
+    {
+        socklen_t addressLength = sizeof(address);
+        handle = accept(socketHandle, (sockaddr*)&address,&addressLength);
+    }
 
     Response ClientConnection::receiveData()
     {
         Response output = {{},""};
         bool holt = false;
-
-        socklen_t addressLength = sizeof(address);
-        handle = accept(socketHandle, (sockaddr*)&address,&addressLength);
 
         if (handle == -1)
         {
@@ -90,7 +87,6 @@ namespace StiltFox::DialUp
             });
 
             while (chrono::high_resolution_clock::now() - startTime < chrono::milliseconds(maxWaitTimeMs) && !holt);
-            socketThread.join();
 
             if (!holt)
             {
@@ -98,6 +94,7 @@ namespace StiltFox::DialUp
                 holt = true;
                 output.errorMessage = "Connection timed out";
             }
+            socketThread.join();
         }
 
         return output;

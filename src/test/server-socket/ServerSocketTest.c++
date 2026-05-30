@@ -91,6 +91,7 @@ namespace StiltFox::DialUp
 
         thread connectionListenerThread([openPort, &actual](){
             ClientConnection clientConnection(openPort->getHandle(), openPort->getAddress());
+            clientConnection.waitForConnection();
             const auto responseData = clientConnection.receiveData();
             actual = make_shared<HttpMessage>(responseData.data);
         });
@@ -116,6 +117,7 @@ namespace StiltFox::DialUp
         //when we open a connection
         thread connectionListenerThread([openPort, expected](){
             ClientConnection clientConnection(openPort->getHandle(), openPort->getAddress());
+            clientConnection.waitForConnection();
             const auto responseData = clientConnection.receiveData();
             string message = expected.printAsResponse();
             clientConnection.sendData({message.begin(), message.end()});

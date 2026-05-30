@@ -8,6 +8,7 @@
 #include <curl/curl.h>
 #include "PortAuthorityTestingUtils.h++"
 #include <algorithm>
+#include "ServerSocket.h++"
 
 namespace StiltFox::DialUp::Tests::PortAuthorityTests
 {
