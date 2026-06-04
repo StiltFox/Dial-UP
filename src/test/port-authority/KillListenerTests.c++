@@ -6,6 +6,8 @@
 * of use.
 ********************************************************/
 #include <gtest/gtest.h>
+#include <chrono>
+#include <thread>
 #include <nlohmann/json.hpp>
 #include "PrintHelper.h++"
 #include "HttpClient.h++"
@@ -37,6 +39,7 @@ namespace StiltFox::DialUp::Tests::PortAuthorityTests::KillListenerTests
 
         //then the application has terminated
         HttpMessage expected = {200,{{"Content-Type",{"text/plain"}}},"shutting down"};
+        this_thread::sleep_for(chrono::milliseconds(10));
         EXPECT_FALSE(serverRunning);
         EXPECT_EQ(response,expected);
 

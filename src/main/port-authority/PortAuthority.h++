@@ -8,7 +8,6 @@
 #ifndef Stilt_Fox_65d185776f6249aaa0182b82cad0384b
 #define Stilt_Fox_65d185776f6249aaa0182b82cad0384b
 #include <memory>
-#include <thread>
 #include <mutex>
 #include <functional>
 #include "EndpointRegistry.h++"
@@ -32,7 +31,7 @@ namespace StiltFox::DialUp
         std::shared_ptr<ServerSocket> socket, killSocket;
 
         void startMainLoop();
-        void startWorkerThread(std::shared_ptr<ClientConnection> connection, Response data);
+        void startWorkerThread(std::shared_ptr<ClientConnection> connection);
 
     public:
         /***************************************************************************************************************

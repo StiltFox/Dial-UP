@@ -115,6 +115,7 @@ namespace StiltFox::DialUp
             while (killSocket->isOpen())
             {
                 ClientConnection killConnection(*killSocket);
+                killConnection.waitForConnection();
                 const auto response = killConnection.receiveData();
                 if (checkForKillCommand(response, killConnection)) authority->stopApplication();
             }
@@ -122,10 +123,13 @@ namespace StiltFox::DialUp
         killThread.detach();
     }
 
-    void PortAuthority::startWorkerThread(shared_ptr<ClientConnection> connection, Response message)
+    void PortAuthority::startWorkerThread(shared_ptr<ClientConnection> connection)
     {
-        thread workerThread([this, connection, message]()
+        thread workerThread([this, connection]()
         {
+            const auto message = connection->receiveData();
+            logger(LogSevarity::DEBUG, "Thread starting for: " + string(message.data.begin(), message.data.end()));
+
             if (message.errorMessage.empty())
             {
                 sendResponse(registry.submitMessage(message.data), *connection);
@@ -147,12 +151,11 @@ namespace StiltFox::DialUp
             if (currentThreads < maxThreads)
             {
                 auto connection = make_shared<ClientConnection>(*socket, maxWaitTime, maxDataSize);
-                auto data = connection->receiveData();
-                logger(LogSevarity::DEBUG, "Thread starting for: " + string(data.data.begin(), data.data.end()));
+                connection->waitForConnection();
                 if (socket->isOpen())
                 {
                     lock_guard guard(threadCountMutex);
-                    startWorkerThread(connection, data);
+                    startWorkerThread(connection);
                     currentThreads++;
                 }
             }
