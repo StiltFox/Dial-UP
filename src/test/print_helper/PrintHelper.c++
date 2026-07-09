@@ -18,6 +18,7 @@ namespace StiltFox::DialUp
         j["protocol"] = url.protocol;
         j["host"] = url.host;
         j["port"] = url.port;
+        j["miscColonSection"] = url.miscColonSection;
         j["path-segments"] = url.pathSegments;
         j["parameters"] = url.parameters;
     }

@@ -120,7 +120,7 @@ namespace StiltFox::DialUp::Tests::Parse
         EXPECT_EQ(expected, actual);
     }
 
-    TEST(parse, will_return_a_port_number_of_negative_two_when_parsing_a_port_number_that_cannot_be_parsed)
+    TEST(parse, returns_a_port_of_neg_2_and_places_the_value_in_miscColonSection_when_a_string_value_follows_the_colon)
     {
         //given we have a url with a non-numeric port number
         const string urlString = "http://example.com:pickle";
@@ -129,7 +129,24 @@ namespace StiltFox::DialUp::Tests::Parse
         const auto actual = Url::parse(urlString);
 
         //then we get back a port number of -2
-        const Url expected = {"http","example.com",-2};
+        Url expected = {"http","example.com",-2};
+
+        //and miscColonSection will be the value that was parsed
+        expected.miscColonSection = "pickle";
+        EXPECT_EQ(expected, actual);
+    }
+
+    TEST(parse, will_properly_parse_an_escaped_misc_colon_section_properly)
+    {
+        //given we have a url with a non-numeric port number with escaped characters
+        const string urlString = "http://example.com:test%40data";
+
+        //when we parse the url
+        const auto actual = Url::parse(urlString);
+
+        //then we get back an unencoded miscColonSection
+        Url expected = {"http", "example.com", -2};
+        expected.miscColonSection = "test@data";
         EXPECT_EQ(expected, actual);
     }
 

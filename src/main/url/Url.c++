@@ -70,7 +70,14 @@ namespace StiltFox::DialUp
         {
             if (!url.protocol.empty()) output << urlEncode(url.protocol) << "://";
             output << urlEncode(url.host);
-            if (url.port > 0) output << ":" << url.port;
+            if (url.port > 0)
+            {
+                output << ":" << url.port;
+            }
+            else if (!url.miscColonSection.empty())
+            {
+                output << ":" << urlEncode(url.miscColonSection);
+            }
         }
         else if (url.pathSegments.empty())
         {
@@ -88,6 +95,12 @@ namespace StiltFox::DialUp
         this->port = port;
         this->pathSegments = move(pathSegments);
         this->parameters = move(parameters);
+    }
+
+    Url::Url(std::string protocol, std::string host, std::string miscColonSection, std::vector<std::string> pathSegments,
+        std::unordered_map<std::string, std::string> parameters) : Url(protocol, host, -1, pathSegments, parameters)
+    {
+        this->miscColonSection = move(miscColonSection);
     }
 
     string Url::toUrl() const
@@ -139,6 +152,7 @@ namespace StiltFox::DialUp
                 }
                 catch (...)
                 {
+                    output.miscColonSection = urlDecode(hostInformation[1]);
                     output.port = -2;
                 }
             }
@@ -162,13 +176,13 @@ namespace StiltFox::DialUp
     bool Url::operator==(const Url& other) const
     {
         return pathSegments == other.pathSegments && parameters == other.parameters && port == other.port &&
-               protocol == other.protocol && host == other.host;
+               protocol == other.protocol && host == other.host && miscColonSection == other.miscColonSection;
     }
 
     bool Url::operator!=(const Url& other) const
     {
         return !(pathSegments == other.pathSegments && parameters == other.parameters && port == other.port &&
-               protocol == other.protocol && host == other.host);
+               protocol == other.protocol && host == other.host && miscColonSection == other.miscColonSection);
     }
 
     bool Url::operator==(const string& other) const
