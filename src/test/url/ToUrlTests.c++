@@ -96,4 +96,29 @@ namespace StiltFox::DialUp::Tests::UrlTests::ToUrl
         EXPECT_EQ("/i%20have%20spaces?%2Faq%2A%28%29%24%3F%21%40%23%24%25%5E%26_-%2B%3D=%E6%B0%B4%E3%82%92%E3%81%8F%E3%"
             "81%A0%E3%81%95%E3%81%84", actual);
     }
+
+    TEST(toUrl, will_prioritize_a_port_number_over_miscColonSection)
+    {
+        //given we have a url with both a port number and a misc colon section
+        Url url = {"http", "example.com", 20};
+        url.miscColonSection = "test";
+
+        //when we convert the url to a url string
+        const auto actual = url.toUrl();
+
+        //then we get back a url string with a port number
+        EXPECT_EQ("http://example.com:20", actual);
+    }
+
+    TEST(toUrl, will_print_a_random_string_after_the_colon_instead_of_the_port_number_if_misc)
+    {
+        //given we have a url with a misc colon section
+        const Url url = {"http", "example.com", "random@data"};
+
+        //when we convert the url to a url string
+        const auto actual = url.toUrl();
+
+        //then we get back a url string with a port number
+        EXPECT_EQ("http://example.com:random%40data", actual);
+    }
 }
